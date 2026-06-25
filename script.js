@@ -228,6 +228,23 @@ const Fixtures = {
 
         const activeGames = this.getFilteredGames(data);
 
+        // Sort matches: Live first, Scheduled next, Ended last.
+        activeGames.sort((a, b) => {
+            const getStatusRank = (game) => {
+                if (game.statusGroup === 2 || game.statusGroup === 3 || game.shortStatusText === 'Live' || game.statusText === "1st Half" || game.statusText === "2nd Half") {
+                    return 1; // Live
+                } else if (game.statusText === "Ended" || game.statusGroup === 4) {
+                    return 3; // Ended
+                }
+                return 2; // Scheduled
+            };
+            const rankA = getStatusRank(a);
+            const rankB = getStatusRank(b);
+            
+            if (rankA !== rankB) return rankA - rankB;
+            return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+        });
+
         if (activeGames.length === 0) {
             let emptyMsg = `No ${this.currentSport !== 'All' ? this.currentSport : ''} matches found for ${Helpers.getDateString(offsetDays)}.`;
             if (this.currentSport === 'Cricket') {
@@ -677,24 +694,32 @@ const UI = {
             });
         }
 
-        // Mobile Menu
+        // Mobile menu logic
         const menuOverlay = document.getElementById('mobile-menu-overlay');
         const sideMenu = document.getElementById('mobile-side-menu');
+        const openMenuBtn = document.getElementById('open-menu');
+        const closeMenuBtn = document.getElementById('close-menu');
         
-        document.getElementById('open-menu').addEventListener('click', () => {
-            menuOverlay.classList.add('active');
-            sideMenu.classList.add('active');
-        });
+        if (openMenuBtn) {
+            openMenuBtn.addEventListener('click', () => {
+                menuOverlay.classList.add('active');
+                sideMenu.classList.add('active');
+            });
+        }
         
-        document.getElementById('close-menu').addEventListener('click', () => {
-            menuOverlay.classList.remove('active');
-            sideMenu.classList.remove('active');
-        });
+        if (closeMenuBtn) {
+            closeMenuBtn.addEventListener('click', () => {
+                menuOverlay.classList.remove('active');
+                sideMenu.classList.remove('active');
+            });
+        }
         
-        menuOverlay.addEventListener('click', () => {
-            menuOverlay.classList.remove('active');
-            sideMenu.classList.remove('active');
-        });
+        if (menuOverlay) {
+            menuOverlay.addEventListener('click', () => {
+                menuOverlay.classList.remove('active');
+                sideMenu.classList.remove('active');
+            });
+        }
 
         // Date Tabs (Yesterday, Today, Tomorrow)
         const dateTabs = document.querySelectorAll('.date-filters .filter-tab');
