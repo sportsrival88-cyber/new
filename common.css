@@ -1,4 +1,168 @@
 /* =========================================
+   ONESPORTS - BASE SYSTEM (INJECTED FROM STYLE.CSS)
+   ========================================= */
+:root {
+    --bg-color: #05080c;
+    --card-bg: #0b1118;
+    --primary: #FFD700;
+    --secondary: #E10600;
+    --accent: #00BFFF;
+    --text-main: #FFFFFF;
+    --text-muted: #8a96a3;
+    
+    --glass-border: rgba(255, 215, 0, 0.1);
+    --glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+    
+    --font-main: 'Inter', sans-serif;
+    --font-heading: 'Orbitron', sans-serif;
+    
+    --bottom-nav-height: 65px;
+}
+
+body.light-mode {
+    --bg-color: #f3f4f6;
+    --card-bg: #ffffff;
+    --text-main: #111827;
+    --text-muted: #6b7280;
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --glass-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Sleek Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+}
+body.light-mode ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+}
+* {
+    scrollbar-width: thin;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--bg-color);
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(255, 215, 0, 0.05), transparent 30%),
+        radial-gradient(circle at 90% 80%, rgba(0, 191, 255, 0.03), transparent 30%),
+        url('data:image/svg+xml;utf8,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><path d="M54.627 0l1.196 1.197-30 30L0 5.824 1.197 4.627l24.627 24.627L54.627 0zM0 54.176l1.197-1.197 24.627-24.627L55.824 58.35l-1.197 1.197-30-30L0 54.176z" fill="rgba(255,215,0,0.015)" fill-rule="evenodd"/></svg>');
+    color: var(--text-main);
+    font-family: var(--font-main);
+    min-height: 100vh;
+}
+
+/* Force App Container to Overlay Blogger Theme */
+.app-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 999999 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    background-color: var(--bg-color) !important;
+    color: var(--text-main) !important;
+}
+.app-container a {
+    text-decoration: none !important;
+    color: inherit;
+}
+.app-container img {
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+}
+body.light-mode .app-container {
+    --bg-color: #f3f4f6 !important;
+    --card-bg: #ffffff !important;
+    --text-main: #111827 !important;
+    --text-muted: #6b7280 !important;
+    --glass-border: rgba(0, 0, 0, 0.1) !important;
+    --glass-shadow: 0 5px 20px rgba(0, 0, 0, 0.05) !important;
+    background-color: var(--bg-color) !important;
+    color: var(--text-main) !important;
+}
+
+body.light-mode {
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(255, 215, 0, 0.1), transparent 30%),
+        radial-gradient(circle at 90% 80%, rgba(0, 191, 255, 0.1), transparent 30%),
+        url('data:image/svg+xml;utf8,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><path d="M54.627 0l1.196 1.197-30 30L0 5.824 1.197 4.627l24.627 24.627L54.627 0zM0 54.176l1.197-1.197 24.627-24.627L55.824 58.35l-1.197 1.197-30-30L0 54.176z" fill="rgba(0,0,0,0.03)" fill-rule="evenodd"/></svg>');
+}
+
+/* Security Layer Overlay */
+.devtools-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(11, 15, 20, 0.95);
+    backdrop-filter: blur(15px);
+    z-index: 999999;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.devtools-overlay.active { display: flex; }
+
+.overlay-content {
+    background: var(--card-bg);
+    border: 1px solid var(--glass-border);
+    padding: 3rem;
+    border-radius: 15px;
+}
+
+.overlay-content i {
+    font-size: 4rem;
+    color: var(--primary);
+    margin-bottom: 1rem;
+}
+
+/* Typography & Utilities */
+.primary-text { color: var(--primary); }
+.secondary-text { color: var(--secondary); }
+.muted-text { color: var(--text-muted); }
+.text-center { text-align: center; }
+
+.container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+.glass-card {
+    background: var(--card-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: var(--glass-shadow);
+    overflow: hidden;
+}
+
+
+/* =========================================
    ONESPORTS - COMMON CSS FOR STAGES
    ========================================= */
 
