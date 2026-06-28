@@ -867,7 +867,17 @@
     flex-direction: column;
     overflow: hidden;
 }
+#os-match-timeline.os-cm-open {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+}
 .os-tl-container-wrap {
+    width: 100%;
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+}
     width: 100%;
     min-height: 350px;
     display: flex;
@@ -893,7 +903,7 @@
 }
 .os-tl-scroll-body.os-cm-expanded {
     height: auto;
-    max-height: 600px;
+    max-height: none;
     overflow-y: auto;
 }
 .os-tl-scroll-body.os-cm-expanded::after { opacity: 0; }
@@ -1938,7 +1948,7 @@
 }
 .os-cm-scroll-body.os-cm-expanded {
     height: auto;
-    max-height: 600px;
+    max-height: none;
     overflow-y: auto;
 }
 .os-cm-scroll-body.os-cm-expanded::after {
@@ -2038,4 +2048,5 @@
 #os-live-commentary.os-cm-open {
     height: auto;
     max-height: none;
+    overflow: visible;
 }
