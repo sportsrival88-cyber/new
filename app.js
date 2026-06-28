@@ -1031,6 +1031,19 @@ class Application {
             updated: data.updated
         };
 
+        OneSportsApp.shell = {
+            hero: document.getElementById("os-hero"),
+            primary: document.getElementById("os-primary"),
+            editorial: document.getElementById("os-editorial"),
+            timeline: document.getElementById("os-timeline"),
+            statistics: document.getElementById("os-statistics"),
+            standings: document.getElementById("os-standings"),
+            related: document.getElementById("os-related"),
+            footer: document.getElementById("os-footer-cta")
+        };
+
+        console.log("Shell:", OneSportsApp.shell);
+
         console.log("Stage:", OneSportsApp.stage);
         console.log("Post:", OneSportsApp.post);
         
