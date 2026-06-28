@@ -34,7 +34,7 @@ const Router = {
         switch (OneSportsApp.stage) {
 
             case "match":
-                console.log("Loading MATCH page...");
+                MatchRenderer.render();
                 break;
 
             case "streams":
@@ -48,6 +48,12 @@ const Router = {
             default:
                 console.warn("Unknown stage:", OneSportsApp.stage);
         }
+    }
+};
+
+const MatchRenderer = {
+    render() {
+        console.log("Rendering Match Page");
     }
 };
 
