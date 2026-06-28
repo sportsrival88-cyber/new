@@ -86,6 +86,26 @@ const HeroModel = {
     background: ""
 };
 
+const MatchModel = {
+    fixtureId: "",
+    competitionId: "",
+    seasonId: "",
+
+    hero: HeroModel,
+
+    timeline: [],
+
+    statistics: {},
+
+    standings: {},
+
+    related: [],
+
+    stream: {},
+
+    player: {}
+};
+
 const HeroRenderer = {
     render() {
         BaseRenderer.render(
