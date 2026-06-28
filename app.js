@@ -51,14 +51,32 @@ const Router = {
     }
 };
 
+const BaseRenderer = {
+
+    render(container, html) {
+
+        if (!container) {
+            console.warn("Container not found");
+            return;
+        }
+
+        container.innerHTML = html;
+
+    }
+
+};
+
 const HeroRenderer = {
     render() {
-        OneSportsApp.shell.hero.innerHTML = `
+        BaseRenderer.render(
+            OneSportsApp.shell.hero,
+            `
             <div class="glass-card" style="padding:40px;text-align:center;">
                 <h1>${OneSportsApp.post.title}</h1>
                 <p>Match Page Renderer Working</p>
             </div>
-        `;
+            `
+        );
     }
 };
 
