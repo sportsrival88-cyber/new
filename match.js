@@ -443,7 +443,6 @@ const MatchObservers = {
     init() {
         const lazyEls = [
             'os-match-timeline',
-            'os-live-commentary',
             'os-match-h2h',
             'os-recent-form',
             'os-group-standings',
@@ -481,7 +480,7 @@ const MatchRenderer = {
     
     cacheDOM() {
         const ids = [
-            'os-match-photo', 'os-hero-banner', 'os-live-score', 'os-live-commentary', 'os-match-info',
+            'os-match-photo', 'os-hero-banner', 'os-live-score', 'os-match-info',
             'os-team-cards', 'os-match-lineups', 'os-match-formations', 'os-player-ratings', 'os-match-timeline', 
             'os-match-highlights', 'os-match-events', 'os-match-stats', 'os-broadcast-link', 'os-match-h2h', 
             'os-recent-form', 'os-match-injuries', 'os-social-feed',
@@ -559,48 +558,44 @@ const MatchRenderer = {
         });
 
         MatchEventBus.on('lazyLoad_os-live-commentary', () => {
-            if (MatchStore.commentary) {
-                // Data already fetched — render immediately
-                try { MatchRenderer.renderCommentary(MatchStore.commentary); } catch(e) { Logger.error('Commentary render error', e); }
-            } else if (MatchStore.commentary === null && MatchStore.game) {
-                // Data not yet fetched — check if playByPlay exists and fetch it
-                const game = MatchStore.game.game;
-                if (game && game.playByPlay && game.playByPlay.feedURL) {
-                    MatchRenderer.initCommentary();
-                    MatchAPI.fetchCommentary(game.playByPlay.feedURL);
-                } else {
-                    MatchRenderer.renderCommentaryError();
-                }
-            } else {
-                MatchRenderer.initCommentary();
-            }
-            MatchEventBus.on('commentaryUpdated', (data) => {
-                MatchStore.commentary = data;
-                try { MatchRenderer.renderCommentary(data); } catch(e) { Logger.error('Commentary error', e); }
-            });
-            MatchEventBus.on('commentaryError', () => MatchRenderer.renderCommentaryError());
+            // Commentary is now merged into os-match-timeline — no-op here
         });
 
         MatchEventBus.on('lazyLoad_os-match-timeline', () => {
             MatchRenderer.initMatchTimeline();
+
+            // ── Render timeline if data already loaded ──
             if (MatchStore.game) {
                 try {
                     Logger.time("renderMatchTimeline");
                     MatchRenderer.renderMatchTimeline(MatchStore.game);
                     Logger.timeEnd("renderMatchTimeline");
-                } catch(e) {
-                    Logger.error("Timeline render error", e);
-                }
+                } catch(e) { Logger.error("Timeline render error", e); }
             }
             MatchEventBus.on('timelineUpdated', (data) => {
                 try {
                     Logger.time("renderMatchTimeline");
                     MatchRenderer.renderMatchTimeline(data);
                     Logger.timeEnd("renderMatchTimeline");
-                } catch(e) {
-                    Logger.error("Timeline error", e);
-                }
+                } catch(e) { Logger.error("Timeline error", e); }
             });
+
+            // ── Render commentary if data already loaded ──
+            if (MatchStore.commentary) {
+                try { MatchRenderer.renderCommentary(MatchStore.commentary); } catch(e) { Logger.error('Commentary render error', e); }
+            } else if (MatchStore.commentary === null && MatchStore.game) {
+                const game = MatchStore.game.game;
+                if (game && game.playByPlay && game.playByPlay.feedURL) {
+                    MatchAPI.fetchCommentary(game.playByPlay.feedURL);
+                } else {
+                    MatchRenderer.renderCommentaryError();
+                }
+            }
+            MatchEventBus.on('commentaryUpdated', (data) => {
+                MatchStore.commentary = data;
+                try { MatchRenderer.renderCommentary(data); } catch(e) { Logger.error('Commentary error', e); }
+            });
+            MatchEventBus.on('commentaryError', () => MatchRenderer.renderCommentaryError());
         });
 
         MatchEventBus.on('lazyLoad_os-group-standings', () => {
@@ -674,34 +669,31 @@ const MatchRenderer = {
     },
 
     initCommentary() {
-        const container = this.elements['os-live-commentary'];
-        if (!container) return;
-        container.innerHTML = `
-            <div class="os-cm-container">
-                <div class="os-mi-header">Commentary</div>
-                <div class="os-cm-list" id="os-cm-list">
-                    <div style="text-align:center;padding:20px;color:var(--text-muted);font-family:var(--font-main);">
-                        <i class="fas fa-spinner fa-spin"></i> Loading commentary...
-                    </div>
-                </div>
-            </div>
-        `;
+        // Commentary is now hosted inside os-match-timeline — no separate init needed
     },
 
     renderCommentaryError() {
-        const container = this.elements['os-live-commentary'];
-        if (!container) return;
-        container.style.display = 'none';
+        const pane = document.getElementById('os-cm-pane');
+        if (!pane) return;
+        pane.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-family:var(--font-main);">Commentary not available for this match.</div>`;
+        // Hide the Commentary tab since there's nothing to show
+        const tab = document.getElementById('os-tltab-cm');
+        if (tab) tab.style.display = 'none';
     },
 
     renderCommentary(messages) {
-        const container = this.elements['os-live-commentary'];
-        if (!container) return;
+        const pane = document.getElementById('os-cm-pane');
+        if (!pane) return;
 
         if (!messages || messages.length === 0) {
-            container.style.display = 'none';
+            const tab = document.getElementById('os-tltab-cm');
+            if (tab) tab.style.display = 'none';
             return;
         }
+
+        // Show commentary tab now that we have data
+        const tab = document.getElementById('os-tltab-cm');
+        if (tab) tab.style.display = '';
 
         const getIcon = (type) => {
             const t = String(type);
@@ -715,7 +707,7 @@ const MatchRenderer = {
 
         const isMajor = (msg) => msg.IsMajor || [1,2,5,6,9,40,41,42,43,44,45].includes(Number(msg.Type));
 
-        const buildRow = (msg) => {
+        const allRows = messages.map(msg => {
             const time = msg.Timeline ? `${msg.Timeline}'${msg.TimeLineSecondaryText ? '<span class="os-cm-added">+' + msg.TimeLineSecondaryText + '</span>' : ''}` : '';
             const icon = getIcon(msg.Type);
             const title = msg.Title ? `<div class="os-cm-title ${msg.IsMajor ? 'major' : ''}" style="${msg.TitleColor ? 'color:' + msg.TitleColor : ''}">${Security.escapeHTML(msg.Title)}</div>` : '';
@@ -726,31 +718,13 @@ const MatchRenderer = {
                 <div class="os-cm-dot">${icon}</div>
                 <div class="os-cm-body">${title}${comment}</div>
             </div>`;
-        };
+        }).join('');
 
-        const allRows = messages.map(buildRow).join('');
+        pane.innerHTML = `<div class="os-cm-list">${allRows}</div>`;
 
-        container.innerHTML = `
-            <div class="os-cm-container">
-                <div class="os-cm-header-bar">
-                    <span class="os-mi-header" style="margin:0; border:none; padding:0;">Commentary</span>
-                    <span class="os-cm-count">${messages.length} events</span>
-                </div>
-                <div class="os-cm-scroll-body" id="os-cm-body">
-                    <div class="os-cm-list">${allRows}</div>
-                </div>
-                <button class="os-cm-toggle" id="os-cm-toggle" onclick="
-                    var b = document.getElementById('os-cm-body');
-                    var btn = document.getElementById('os-cm-toggle');
-                    var outer = btn.closest('#os-live-commentary');
-                    var expanded = b.classList.toggle('os-cm-expanded');
-                    if (outer) outer.classList.toggle('os-cm-open', expanded);
-                    btn.innerHTML = expanded
-                        ? '<i class=\\'fas fa-chevron-up\\'></i> Show Less'
-                        : '<i class=\\'fas fa-chevron-down\\'></i> Show All ${messages.length} Events';
-                "><i class="fas fa-chevron-down"></i> Show All ${messages.length} Events</button>
-            </div>
-        `;
+        // Show the expand toggle (shared with timeline)
+        const toggleBtn = document.getElementById('os-tl-toggle');
+        if (toggleBtn) toggleBtn.style.display = '';
     },
 
     renderHeroError() {
@@ -967,13 +941,37 @@ const MatchRenderer = {
         container.innerHTML = `
             <div class="os-tl-container-wrap">
                 <div class="os-cm-header-bar">
-                    <span class="os-mi-header" style="margin:0; border:none; padding:0;">Match Timeline</span>
+                    <div class="os-tltab-switcher">
+                        <button class="os-tltab active" id="os-tltab-tl" onclick="
+                            document.getElementById('os-tltab-tl').classList.add('active');
+                            document.getElementById('os-tltab-cm').classList.remove('active');
+                            document.getElementById('os-tl-pane').style.display='';
+                            document.getElementById('os-cm-pane').style.display='none';
+                        "><i class='fas fa-list-ul'></i> Timeline</button>
+                        <button class="os-tltab" id="os-tltab-cm" onclick="
+                            document.getElementById('os-tltab-cm').classList.add('active');
+                            document.getElementById('os-tltab-tl').classList.remove('active');
+                            document.getElementById('os-cm-pane').style.display='';
+                            document.getElementById('os-tl-pane').style.display='none';
+                        "><i class='fas fa-microphone-alt'></i> Commentary</button>
+                    </div>
                     <span class="os-cm-count" id="os-tl-count"></span>
                 </div>
                 <div class="os-tl-scroll-body" id="os-tl-body">
-                    <div class="os-timeline-wrapper" id="os-timeline-inner">
-                        <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
-                            <i class="fas fa-spinner fa-spin"></i> Loading timeline...
+                    <!-- Timeline pane -->
+                    <div id="os-tl-pane">
+                        <div class="os-timeline-wrapper" id="os-timeline-inner">
+                            <div style="text-align:center;padding:20px;color:var(--text-muted);font-family:var(--font-main);">
+                                <i class="fas fa-spinner fa-spin"></i> Loading timeline...
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Commentary pane -->
+                    <div id="os-cm-pane" style="display:none;">
+                        <div class="os-cm-list" id="os-cm-list">
+                            <div style="text-align:center;padding:20px;color:var(--text-muted);font-family:var(--font-main);">
+                                <i class="fas fa-spinner fa-spin"></i> Loading commentary...
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -984,8 +982,8 @@ const MatchRenderer = {
                     var expanded = b.classList.toggle('os-cm-expanded');
                     if (outer) outer.classList.toggle('os-cm-open', expanded);
                     btn.innerHTML = expanded
-                        ? '<i class=\'fas fa-chevron-up\'></i> Show Less'
-                        : '<i class=\'fas fa-chevron-down\'></i> Show All Events';
+                        ? '<i class=\\'fas fa-chevron-up\\'></i> Show Less'
+                        : '<i class=\\'fas fa-chevron-down\\'></i> Show All Events';
                 "><i class="fas fa-chevron-down"></i> Show All Events</button>
             </div>
         `;

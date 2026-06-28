@@ -908,6 +908,38 @@
     max-height: none;
 }
 
+/* ── Timeline/Commentary tab switcher ── */
+.os-tltab-switcher {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex: 1;
+}
+.os-tltab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: var(--font-main);
+    border: 1px solid rgba(255,255,255,0.12);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.os-tltab.active {
+    background: var(--primary);
+    color: #000;
+    border-color: var(--primary);
+}
+.os-tltab:hover:not(.active) {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-main);
+}
+
 /* Mobile Layout */
 
 /* ==========================================
