@@ -228,6 +228,7 @@ const MatchStore = {
     game: null,
     standings: null,
     h2h: null,
+    commentary: null,
     relatedMatches: null,
     
     updateMetadata(data) {
@@ -320,6 +321,10 @@ const MatchAPI = {
                 } else if (data.previousMeetings) {
                     MatchStore.updateH2H(data.previousMeetings);
                 }
+
+                if (data.game.playByPlay && data.game.playByPlay.feedURL && !MatchStore.commentary) {
+                    this.fetchCommentary(data.game.playByPlay.feedURL);
+                }
             } else {
                 MatchEventBus.emit('gameError', true);
             }
@@ -356,6 +361,19 @@ const MatchAPI = {
     
     async fetchRelatedMatches() {
         MatchStore.updateRelatedMatches([]);
+    },
+
+    async fetchCommentary(feedURL) {
+        try {
+            const fetched = await API.fetchJSON(feedURL);
+            if (fetched && fetched.Messages && fetched.Messages.length > 0) {
+                MatchEventBus.emit('commentaryUpdated', fetched.Messages);
+            } else {
+                MatchEventBus.emit('commentaryError', true);
+            }
+        } catch (e) {
+            MatchEventBus.emit('commentaryError', true);
+        }
     }
 };
 
@@ -539,6 +557,18 @@ const MatchRenderer = {
             MatchRenderer.renderMatchRecentFormError();
         });
 
+        MatchEventBus.on('lazyLoad_os-live-commentary', () => {
+            MatchRenderer.initCommentary();
+            if (MatchStore.commentary) {
+                try { MatchRenderer.renderCommentary(MatchStore.commentary); } catch(e) { Logger.error('Commentary render error', e); }
+            }
+            MatchEventBus.on('commentaryUpdated', (data) => {
+                MatchStore.commentary = data;
+                try { MatchRenderer.renderCommentary(data); } catch(e) { Logger.error('Commentary error', e); }
+            });
+            MatchEventBus.on('commentaryError', () => MatchRenderer.renderCommentaryError());
+        });
+
         MatchEventBus.on('lazyLoad_os-match-timeline', () => {
             MatchRenderer.initMatchTimeline();
             if (MatchStore.game) {
@@ -629,6 +659,86 @@ const MatchRenderer = {
             });
             MatchAPI.fetchRelatedMatches(); 
         });
+    },
+
+    initCommentary() {
+        const container = this.elements['os-live-commentary'];
+        if (!container) return;
+        container.innerHTML = `
+            <div class="os-cm-container">
+                <div class="os-mi-header">Commentary</div>
+                <div class="os-cm-list" id="os-cm-list">
+                    <div style="text-align:center;padding:20px;color:var(--text-muted);font-family:var(--font-main);">
+                        <i class="fas fa-spinner fa-spin"></i> Loading commentary...
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    renderCommentaryError() {
+        const container = this.elements['os-live-commentary'];
+        if (!container) return;
+        container.style.display = 'none';
+    },
+
+    renderCommentary(messages) {
+        const container = this.elements['os-live-commentary'];
+        if (!container) return;
+
+        if (!messages || messages.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        const INITIAL_SHOW = 8;
+        let expanded = false;
+
+        const getIcon = (type) => {
+            const t = String(type);
+            if (['1','2'].includes(t)) return '<i class="fas fa-futbol os-cm-icon goal"></i>';
+            if (t === '5') return '<i class="fas fa-square os-cm-icon yellow"></i>';
+            if (t === '6') return '<i class="fas fa-square os-cm-icon red"></i>';
+            if (t === '9') return '<i class="fas fa-exchange-alt os-cm-icon sub"></i>';
+            if (['40','41','42','43','44','45'].includes(t)) return '<i class="fas fa-flag-checkered os-cm-icon period"></i>';
+            return '<i class="fas fa-circle os-cm-icon default"></i>';
+        };
+
+        const isMajor = (msg) => msg.IsMajor || [1,2,5,6,9,40,41,42,43,44,45].includes(msg.Type);
+
+        const buildRows = (msgs) => msgs.map(msg => {
+            const time = msg.Timeline ? `${msg.Timeline}'${msg.TimeLineSecondaryText ? '<span class="os-cm-added">+' + msg.TimeLineSecondaryText + '</span>' : ''}` : '';
+            const icon = getIcon(msg.Type);
+            const title = msg.Title ? `<div class="os-cm-title ${msg.IsMajor ? 'major' : ''}" style="${msg.TitleColor ? 'color:' + msg.TitleColor : ''}">${Security.escapeHTML(msg.Title)}</div>` : '';
+            const comment = msg.Comment ? `<div class="os-cm-text">${Security.escapeHTML(msg.Comment)}</div>` : '';
+            if (!title && !comment) return '';
+            return `
+                <div class="os-cm-row ${isMajor(msg) ? 'major' : ''}">
+                    <div class="os-cm-time">${time}</div>
+                    <div class="os-cm-dot">${icon}</div>
+                    <div class="os-cm-body">${title}${comment}</div>
+                </div>
+            `;
+        }).join('');
+
+        const visible = messages.slice(0, INITIAL_SHOW);
+        const hidden = messages.slice(INITIAL_SHOW);
+        const hasMore = hidden.length > 0;
+
+        const hiddenHtml = hasMore
+            ? `<div class="os-cm-hidden" id="os-cm-hidden" style="display:none;">${buildRows(hidden)}</div>
+               <button class="os-cm-toggle" id="os-cm-toggle" onclick="(function(){var h=document.getElementById('os-cm-hidden'),b=document.getElementById('os-cm-toggle');if(h.style.display==='none'){h.style.display='block';b.textContent='Show Less ▲';}else{h.style.display='none';b.textContent='Show All ${hidden.length} More ▼';}})()">Show All ${hidden.length} More ▼</button>`
+            : '';
+
+        container.innerHTML = `
+            <div class="os-cm-container">
+                <div class="os-mi-header">Commentary</div>
+                <div class="os-cm-list" id="os-cm-list">
+                    ${buildRows(visible)}
+                    ${hiddenHtml}
+                </div>
+            </div>
+        `;
     },
 
     renderHeroError() {
