@@ -106,6 +106,20 @@ const MatchModel = {
     player: {}
 };
 
+const MatchService = {
+
+    async load(fixtureId) {
+
+        console.log("Loading fixture:", fixtureId);
+
+        // API will be added later
+
+        return MatchModel;
+
+    }
+
+};
+
 const HeroRenderer = {
     render() {
         BaseRenderer.render(
