@@ -125,21 +125,36 @@ const HeroRenderer = {
         BaseRenderer.render(
             OneSportsApp.shell.hero,
             `
-            <div class="glass-card" style="padding:40px">
+            <div class="os-hero-inner" style="text-align: center; padding: 40px; background: var(--bg-card, #1e1e1e); border-radius: var(--radius-lg, 12px);">
+                
+                <div class="os-hero-header" style="margin-bottom: 30px;">
+                    <div class="os-hero-competition" style="text-transform: uppercase; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px; color: var(--text-muted, #888);">${HeroModel.competition}</div>
+                    <div class="os-hero-stage" style="font-size: 0.85rem; color: var(--text-muted, #888); margin-top: 5px;">${HeroModel.stage}</div>
+                </div>
 
-                <h3>${HeroModel.competition}</h3>
+                <div class="os-hero-teams" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                    <div class="os-hero-team os-hero-home" style="flex: 1; text-align: center;">
+                        <div class="os-hero-team-name" style="font-size: 1.5rem; font-weight: 600;">${HeroModel.homeTeam}</div>
+                        <div class="os-hero-score" style="font-size: 3rem; font-weight: 800; margin-top: 10px;">${HeroModel.homeScore}</div>
+                    </div>
 
-                <p>${HeroModel.stage}</p>
+                    <div class="os-hero-vs" style="font-size: 1rem; font-weight: 700; color: var(--text-muted, #888); padding: 0 20px;">VS</div>
 
-                <h1>${HeroModel.homeTeam} vs ${HeroModel.awayTeam}</h1>
+                    <div class="os-hero-team os-hero-away" style="flex: 1; text-align: center;">
+                        <div class="os-hero-team-name" style="font-size: 1.5rem; font-weight: 600;">${HeroModel.awayTeam}</div>
+                        <div class="os-hero-score" style="font-size: 3rem; font-weight: 800; margin-top: 10px;">${HeroModel.awayScore}</div>
+                    </div>
+                </div>
 
-                <p>${HeroModel.stadium}</p>
+                <div class="os-hero-status" style="margin-bottom: 20px;">
+                    <span class="os-badge" style="display: inline-block; padding: 4px 12px; background: var(--accent-danger, #e63946); color: white; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; border-radius: 4px;">${HeroModel.status}</span>
+                    <div class="os-hero-time" style="font-size: 1.2rem; font-weight: 600; margin-top: 10px;">${HeroModel.kickoff}</div>
+                </div>
 
-                <p>${HeroModel.city}</p>
-
-                <p>${HeroModel.kickoff}</p>
-
-                <p>${HeroModel.status}</p>
+                <div class="os-hero-venue" style="font-size: 0.9rem; color: var(--text-muted, #888);">
+                    <div>${HeroModel.stadium}</div>
+                    <div>${HeroModel.city}</div>
+                </div>
 
             </div>
             `
