@@ -86,6 +86,28 @@ const HeroModel = {
     background: ""
 };
 
+const TimelineModel = [
+    {
+        minute: "12'",
+        type: "goal",
+        team: "Croatia",
+        player: "Luka Modrić",
+        assist: "Perišić"
+    },
+    {
+        minute: "28'",
+        type: "yellow",
+        team: "Brazil",
+        player: "Casemiro"
+    },
+    {
+        minute: "45+2'",
+        type: "goal",
+        team: "Brazil",
+        player: "Vinícius Jr."
+    }
+];
+
 const MatchModel = {
     fixtureId: "",
     competitionId: "",
@@ -93,7 +115,7 @@ const MatchModel = {
 
     hero: HeroModel,
 
-    timeline: [],
+    timeline: TimelineModel,
 
     statistics: {},
 
@@ -174,14 +196,31 @@ const HeroRenderer = {
 const TimelineRenderer = {
 
     render() {
+        let eventsHtml = '';
+        
+        if (MatchModel.timeline && MatchModel.timeline.length > 0) {
+            MatchModel.timeline.forEach(event => {
+                let icon = '';
+                if (event.type === 'goal') icon = '⚽';
+                else if (event.type === 'yellow') icon = '🟨';
+                
+                eventsHtml += `
+                    <div style="margin-bottom: 10px;">
+                        <strong>${event.minute}</strong> ${icon} ${event.player}
+                    </div>
+                `;
+            });
+        }
 
-        OneSportsApp.shell.timeline.innerHTML = `
-            <div class="glass-card" style="padding:30px;text-align:center;">
-                <h2>Timeline Renderer</h2>
-                <p>Timeline component is working.</p>
+        BaseRenderer.render(
+            OneSportsApp.shell.timeline,
+            `
+            <div class="os-timeline-inner" style="padding: 30px; text-align: center;">
+                <h3 style="text-transform: uppercase; margin-bottom: 20px; font-size: 14px; letter-spacing: 2px;">MATCH EVENTS</h3>
+                ${eventsHtml}
             </div>
-        `;
-
+            `
+        );
     }
 
 };
