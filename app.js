@@ -108,6 +108,17 @@ const TimelineModel = [
     }
 ];
 
+const StatisticsModel = {
+    possession: { home: 48, away: 52 },
+    shots: { home: 11, away: 14 },
+    shotsOnTarget: { home: 5, away: 7 },
+    corners: { home: 4, away: 8 },
+    fouls: { home: 12, away: 10 },
+    yellowCards: { home: 2, away: 1 },
+    redCards: { home: 0, away: 0 },
+    offsides: { home: 1, away: 3 }
+};
+
 const MatchModel = {
     fixtureId: "",
     competitionId: "",
@@ -117,7 +128,7 @@ const MatchModel = {
 
     timeline: TimelineModel,
 
-    statistics: {},
+    statistics: StatisticsModel,
 
     standings: {},
 
@@ -228,14 +239,48 @@ const TimelineRenderer = {
 const StatisticsRenderer = {
 
     render() {
+        const stats = MatchModel.statistics;
+        
+        let statsHtml = '';
+        if (stats) {
+            const statKeys = [
+                { key: 'possession', label: 'Possession', isPercent: true },
+                { key: 'shots', label: 'Shots', isPercent: false },
+                { key: 'shotsOnTarget', label: 'Shots on Target', isPercent: false },
+                { key: 'corners', label: 'Corners', isPercent: false },
+                { key: 'fouls', label: 'Fouls', isPercent: false },
+                { key: 'yellowCards', label: 'Yellow Cards', isPercent: false },
+                { key: 'redCards', label: 'Red Cards', isPercent: false },
+                { key: 'offsides', label: 'Offsides', isPercent: false }
+            ];
 
-        OneSportsApp.shell.statistics.innerHTML = `
-            <div class="glass-card" style="padding:30px;text-align:center;">
-                <h2>Statistics Renderer</h2>
-                <p>Statistics component is working.</p>
+            statKeys.forEach(stat => {
+                if (stats[stat.key]) {
+                    let homeVal = stats[stat.key].home + (stat.isPercent ? '%' : '');
+                    let awayVal = stats[stat.key].away + (stat.isPercent ? '%' : '');
+                    
+                    statsHtml += `
+                        <div style="margin-bottom: 15px;">
+                            <div style="font-size: 12px; text-transform: uppercase; margin-bottom: 5px; opacity: 0.8;">${stat.label}</div>
+                            <div style="display: flex; justify-content: center; font-size: 18px; font-weight: bold;">
+                                <span style="margin-right: 20px; width: 40px; text-align: right;">${homeVal}</span>
+                                <span style="margin-left: 20px; width: 40px; text-align: left;">${awayVal}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        BaseRenderer.render(
+            OneSportsApp.shell.statistics,
+            `
+            <div class="os-statistics-inner" style="padding: 30px; text-align: center;">
+                <h3 style="text-transform: uppercase; margin-bottom: 20px; font-size: 14px; letter-spacing: 2px;">MATCH STATISTICS</h3>
+                ${statsHtml}
             </div>
-        `;
-
+            `
+        );
     }
 
 };
