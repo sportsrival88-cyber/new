@@ -443,6 +443,7 @@ const MatchObservers = {
     init() {
         const lazyEls = [
             'os-match-timeline',
+            'os-live-commentary',
             'os-match-h2h',
             'os-recent-form',
             'os-group-standings',
@@ -558,9 +559,20 @@ const MatchRenderer = {
         });
 
         MatchEventBus.on('lazyLoad_os-live-commentary', () => {
-            MatchRenderer.initCommentary();
             if (MatchStore.commentary) {
+                // Data already fetched — render immediately
                 try { MatchRenderer.renderCommentary(MatchStore.commentary); } catch(e) { Logger.error('Commentary render error', e); }
+            } else if (MatchStore.commentary === null && MatchStore.game) {
+                // Data not yet fetched — check if playByPlay exists and fetch it
+                const game = MatchStore.game.game;
+                if (game && game.playByPlay && game.playByPlay.feedURL) {
+                    MatchRenderer.initCommentary();
+                    MatchAPI.fetchCommentary(game.playByPlay.feedURL);
+                } else {
+                    MatchRenderer.renderCommentaryError();
+                }
+            } else {
+                MatchRenderer.initCommentary();
             }
             MatchEventBus.on('commentaryUpdated', (data) => {
                 MatchStore.commentary = data;
@@ -691,9 +703,6 @@ const MatchRenderer = {
             return;
         }
 
-        const INITIAL_SHOW = 8;
-        let expanded = false;
-
         const getIcon = (type) => {
             const t = String(type);
             if (['1','2'].includes(t)) return '<i class="fas fa-futbol os-cm-icon goal"></i>';
@@ -704,39 +713,42 @@ const MatchRenderer = {
             return '<i class="fas fa-circle os-cm-icon default"></i>';
         };
 
-        const isMajor = (msg) => msg.IsMajor || [1,2,5,6,9,40,41,42,43,44,45].includes(msg.Type);
+        const isMajor = (msg) => msg.IsMajor || [1,2,5,6,9,40,41,42,43,44,45].includes(Number(msg.Type));
 
-        const buildRows = (msgs) => msgs.map(msg => {
+        const buildRow = (msg) => {
             const time = msg.Timeline ? `${msg.Timeline}'${msg.TimeLineSecondaryText ? '<span class="os-cm-added">+' + msg.TimeLineSecondaryText + '</span>' : ''}` : '';
             const icon = getIcon(msg.Type);
             const title = msg.Title ? `<div class="os-cm-title ${msg.IsMajor ? 'major' : ''}" style="${msg.TitleColor ? 'color:' + msg.TitleColor : ''}">${Security.escapeHTML(msg.Title)}</div>` : '';
             const comment = msg.Comment ? `<div class="os-cm-text">${Security.escapeHTML(msg.Comment)}</div>` : '';
             if (!title && !comment) return '';
-            return `
-                <div class="os-cm-row ${isMajor(msg) ? 'major' : ''}">
-                    <div class="os-cm-time">${time}</div>
-                    <div class="os-cm-dot">${icon}</div>
-                    <div class="os-cm-body">${title}${comment}</div>
-                </div>
-            `;
-        }).join('');
+            return `<div class="os-cm-row ${isMajor(msg) ? 'major' : ''}">
+                <div class="os-cm-time">${time}</div>
+                <div class="os-cm-dot">${icon}</div>
+                <div class="os-cm-body">${title}${comment}</div>
+            </div>`;
+        };
 
-        const visible = messages.slice(0, INITIAL_SHOW);
-        const hidden = messages.slice(INITIAL_SHOW);
-        const hasMore = hidden.length > 0;
-
-        const hiddenHtml = hasMore
-            ? `<div class="os-cm-hidden" id="os-cm-hidden" style="display:none;">${buildRows(hidden)}</div>
-               <button class="os-cm-toggle" id="os-cm-toggle" onclick="(function(){var h=document.getElementById('os-cm-hidden'),b=document.getElementById('os-cm-toggle');if(h.style.display==='none'){h.style.display='block';b.textContent='Show Less ▲';}else{h.style.display='none';b.textContent='Show All ${hidden.length} More ▼';}})()">Show All ${hidden.length} More ▼</button>`
-            : '';
+        const allRows = messages.map(buildRow).join('');
 
         container.innerHTML = `
             <div class="os-cm-container">
-                <div class="os-mi-header">Commentary</div>
-                <div class="os-cm-list" id="os-cm-list">
-                    ${buildRows(visible)}
-                    ${hiddenHtml}
+                <div class="os-cm-header-bar">
+                    <span class="os-mi-header" style="margin:0; border:none; padding:0;">Commentary</span>
+                    <span class="os-cm-count">${messages.length} events</span>
                 </div>
+                <div class="os-cm-scroll-body" id="os-cm-body">
+                    <div class="os-cm-list">${allRows}</div>
+                </div>
+                <button class="os-cm-toggle" id="os-cm-toggle" onclick="
+                    var b = document.getElementById('os-cm-body');
+                    var btn = document.getElementById('os-cm-toggle');
+                    var outer = btn.closest('#os-live-commentary');
+                    var expanded = b.classList.toggle('os-cm-expanded');
+                    if (outer) outer.classList.toggle('os-cm-open', expanded);
+                    btn.innerHTML = expanded
+                        ? '<i class=\\'fas fa-chevron-up\\'></i> Show Less'
+                        : '<i class=\\'fas fa-chevron-down\\'></i> Show All ${messages.length} Events';
+                "><i class="fas fa-chevron-down"></i> Show All ${messages.length} Events</button>
             </div>
         `;
     },
@@ -1521,7 +1533,7 @@ const MatchRenderer = {
             `;
         }
 
-        const displayName = Security.escapeHTML(standingsObj.displayName || standingsObj.name || 'Group Standings');
+        const displayName = 'Group Standings';
         container.innerHTML = `
             <div class="os-st-container">
                 <div class="os-mi-header">${displayName}</div>

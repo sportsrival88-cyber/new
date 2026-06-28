@@ -1517,6 +1517,7 @@
 #os-recent-form { min-height: 450px; }
 #os-group-standings { min-height: 350px; }
 #os-related-matches { min-height: 350px; }
+#os-live-commentary { min-height: 350px; }
 #os-social-feed { min-height: 200px; }
 
 /* Match Photo Component */
@@ -1688,8 +1689,69 @@
 /* ==========================================
    COMMENTARY SECTION
 ========================================== */
-.os-cm-container { width: 100%; }
-.os-cm-list { display: flex; flex-direction: column; }
+#os-live-commentary {
+    min-height: 350px; /* matches hero banner and standings */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.os-cm-container {
+    width: 100%;
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+}
+.os-cm-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+}
+.os-cm-count {
+    font-family: var(--font-main);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+/* Scroll body: collapsed shows 268px window (350 - header - toggle), expanded scrolls freely */
+.os-cm-scroll-body {
+    height: 268px;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+}
+.os-cm-scroll-body::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: linear-gradient(to bottom, transparent, var(--card-bg, #12121c));
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 1;
+}
+.os-cm-scroll-body.os-cm-expanded {
+    height: auto;
+    max-height: 600px;
+    overflow-y: auto;
+}
+.os-cm-scroll-body.os-cm-expanded::after {
+    opacity: 0;
+}
+.os-cm-scroll-body::-webkit-scrollbar { width: 4px; }
+.os-cm-scroll-body::-webkit-scrollbar-track { background: transparent; }
+.os-cm-scroll-body::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+}
+.os-cm-list {
+    display: flex;
+    flex-direction: column;
+}
 .os-cm-row {
     display: grid;
     grid-template-columns: 52px 28px 1fr;
@@ -1698,6 +1760,7 @@
     border-bottom: 1px solid rgba(255,255,255,0.04);
     align-items: flex-start;
     transition: background 0.2s;
+    animation: fadeInCm 0.25s ease;
 }
 .os-cm-row:hover { background: rgba(255,255,255,0.03); }
 .os-cm-row.major { background: rgba(255,195,0,0.05); }
@@ -1723,7 +1786,7 @@
     padding-top: 3px;
 }
 .os-cm-icon { font-size: 0.75rem; color: var(--text-muted); }
-.os-cm-icon.goal  { color: #ffd700; }
+.os-cm-icon.goal   { color: #ffd700; }
 .os-cm-icon.yellow { color: #ffeb3b; }
 .os-cm-icon.red    { color: #f44336; }
 .os-cm-icon.sub    { color: #4caf50; }
@@ -1743,25 +1806,34 @@
     color: var(--text-muted);
     line-height: 1.5;
 }
+/* Expand/collapse toggle pinned to bottom */
 .os-cm-toggle {
-    display: block;
-    width: calc(100% - 32px);
-    margin: 12px 16px;
-    padding: 10px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.04);
+    border: none;
+    border-top: 1px solid var(--glass-border);
+    color: var(--text-muted);
     font-family: var(--font-main);
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    text-align: center;
-    transition: background 0.2s;
+    transition: background 0.2s, color 0.2s;
+    flex-shrink: 0;
+    z-index: 2;
+    position: relative;
 }
-.os-cm-toggle:hover { background: rgba(255,195,0,0.12); color: var(--primary); }
-.os-cm-hidden { animation: fadeInCm 0.3s ease; }
+.os-cm-toggle:hover { background: rgba(255,195,0,0.1); color: var(--primary); }
 @keyframes fadeInCm {
-    from { opacity: 0; transform: translateY(-8px); }
+    from { opacity: 0; transform: translateY(-6px); }
     to   { opacity: 1; transform: none; }
+}
+/* When expanded, let the container grow beyond 350px */
+#os-live-commentary.os-cm-open {
+    height: auto;
+    max-height: none;
 }
