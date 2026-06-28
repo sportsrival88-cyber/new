@@ -107,6 +107,21 @@ const StandingsRenderer = {
 
 };
 
+const RelatedRenderer = {
+
+    render() {
+
+        OneSportsApp.shell.related.innerHTML = `
+            <div class="glass-card" style="padding:30px;text-align:center;">
+                <h2>Related Renderer</h2>
+                <p>Related matches component is working.</p>
+            </div>
+        `;
+
+    }
+
+};
+
 const MatchRenderer = {
 
     render() {
@@ -115,6 +130,7 @@ const MatchRenderer = {
         TimelineRenderer.render();
         StatisticsRenderer.render();
         StandingsRenderer.render();
+        RelatedRenderer.render();
     }
 
 };
