@@ -1518,3 +1518,20 @@
 #os-group-standings { min-height: 300px; }
 #os-related-matches { min-height: 350px; }
 #os-social-feed { min-height: 200px; }
+
+/* Match Photo Component */
+#os-match-photo {
+    width: 100%;
+    max-height: 500px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    border: 1px solid var(--glass-border);
+}
+.os-match-photo-img {
+    width: 100%;
+    height: auto;
+    max-height: 500px;
+    object-fit: cover;
+    display: block;
+}
