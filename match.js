@@ -777,260 +777,178 @@ const MatchRenderer = {
     // ── Lineup helpers ──────────────────────────────────────────────────────
 
     _luGetPlayerImageUrl(athleteId) {
-        // 365scores player image CDN — falls back gracefully on error
-        return `https://imagecache.365scores.com/image/upload/f_png,w_60,h_60,c_fill,q_auto:eco,d_Athletes:default1.png/v1/Athletes/${athleteId}`;
+        return `https://imagecache.365scores.com/image/upload/f_png,w_80,h_80,c_fill,g_face,q_auto:eco,d_Athletes:default1.png/v1/Athletes/${athleteId}`;
     },
 
     _luParseTeam(competitor, members, events) {
-        const starters = [], subs = [], coachName = 'Not announced';
-        let coachResult = coachName;
+        const starters = [], subs = [];
+        let coach = 'Not announced';
         const lineup = competitor.lineups;
-        if (!lineup || !lineup.members) return { starters, subs, coach: coachResult, formation: '' };
-
-        // Build event lookup: playerId → array of event types
+        if (!lineup || !lineup.members) return { starters, subs, coach, formation: '' };
         const evMap = {};
         (events || []).forEach(ev => {
-            if (!ev.competitorId || ev.competitorId !== competitor.id) return;
-            const pid = ev.playerId;
-            if (!pid) return;
-            if (!evMap[pid]) evMap[pid] = [];
+            if (ev.competitorId !== competitor.id) return;
             const n = String(ev.eventType ? ev.eventType.name : (ev.type || '')).toLowerCase();
-            evMap[pid].push(n);
-            // Sub-on: track the incoming player
-            if (n.includes('sub') && ev.extraPlayers && ev.extraPlayers.length > 0) {
-                const inId = ev.extraPlayers[0];
-                if (!evMap[inId]) evMap[inId] = [];
-                evMap[inId].push('subbed-on');
+            const pid = ev.playerId;
+            if (pid) {
+                if (!evMap[pid]) evMap[pid] = [];
+                if (n.includes('goal'))         evMap[pid].push('goal');
+                if (n.includes('yellow card'))  evMap[pid].push('yellow');
+                if (n.includes('red card'))     evMap[pid].push('red');
+                if (n.includes('substitut')) {
+                    evMap[pid].push('subbed-off');
+                    evMap[pid].push('subtime:' + (ev.gameTime || ''));
+                    if (ev.extraPlayers && ev.extraPlayers.length > 0) {
+                        const inId = ev.extraPlayers[0];
+                        if (!evMap[inId]) evMap[inId] = [];
+                        evMap[inId].push('subbed-on');
+                        evMap[inId].push('subtime:' + (ev.gameTime || ''));
+                    }
+                }
             }
         });
-
         lineup.members.forEach(member => {
             const athlete = members ? members.find(a => a.id === member.id) : null;
             const name = Security.escapeHTML(athlete ? athlete.name : (member.name || 'Unknown'));
-            const num = String(athlete && athlete.jerseyNum ? athlete.jerseyNum : (member.jerseyNumber || ''));
-            const pos = Security.escapeHTML(member.position ? member.position.name : '');
+            const num  = String(athlete && athlete.jerseyNum ? athlete.jerseyNum : (member.jerseyNumber || ''));
+            const pos  = Security.escapeHTML(member.position ? member.position.name : '');
             const isCap = member.statusText === 'Captain' || (athlete && athlete.isCaptain);
             const athleteId = member.id;
-            const playerEvs = evMap[athleteId] || [];
-            const isSubOn = playerEvs.includes('subbed-on');
-
-            const p = { name, num, pos, isCap, athleteId, playerEvs, isSubOn, member };
-            if (member.status === 1) starters.push(p);
+            const playerEvs  = evMap[athleteId] || [];
+            const isSubOn    = playerEvs.includes('subbed-on');
+            const isSubOff   = playerEvs.includes('subbed-off');
+            const subTime    = (playerEvs.find(e => e.startsWith('subtime:')) || '').replace('subtime:', '');
+            const p = { name, num, pos, isCap, athleteId, playerEvs, isSubOn, isSubOff, subTime, member };
+            if (member.status === 1)      starters.push(p);
             else if (member.status === 2) subs.push(p);
-            else if (member.status === 4) coachResult = name;
+            else if (member.status === 4) coach = name;
         });
-
-        return { starters, subs, coach: coachResult, formation: lineup.formation || '' };
+        return { starters, subs, coach, formation: lineup.formation || '' };
     },
 
-    _luPlayerToken(p, xPct, yPct, side) {
-        const imgUrl = this._luGetPlayerImageUrl(p.athleteId);
-        const shortName = p.name.split(' ').pop(); // last name only on pitch
-        return `
-            <div class="os-lu-player-token ${side}" style="left:${xPct}%;top:${yPct}%;">
-                <div style="position:relative;">
-                    <img class="os-lu-avatar" src="${imgUrl}" width="32" height="32"
-                        loading="lazy" decoding="async" alt="${p.name}"
-                        onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                    <div class="os-lu-avatar-fallback" style="display:none;">${p.num || '?'}</div>
-                    ${p.num ? `<div class="os-lu-token-num">${p.num}</div>` : ''}
-                </div>
-                <div class="os-lu-token-name">${shortName}</div>
-            </div>
-        `;
-    },
-
-    _luFormationPositions(formation, side) {
-        // Returns array of {x,y} percent positions for each player in formation order
-        // side: 'home' = left half (x: 5%–47%), 'away' = right half (x: 53%–95%)
-        // Goalkeeper always at the back, rows built from the formation string e.g. "4-3-3"
+    _luFormationRows(formation) {
         const rows = String(formation).split('-').map(Number).filter(n => n > 0);
+        const allRows = [1, ...rows]; // GK row first
+        const total = allRows.length;
         const positions = [];
-        const isHome = side === 'home';
-
-        // GK
-        const gkX = isHome ? 5 : 95;
-        positions.push({ x: gkX, y: 50 });
-
-        // Field rows
-        const totalRows = rows.length;
-        rows.forEach((count, ri) => {
-            // x: distribute rows evenly between 12% and 47% (home) or 53% and 88% (away)
-            const rowFrac = (ri + 1) / (totalRows + 1);
-            const xBase = isHome ? 12 + rowFrac * 35 : 88 - rowFrac * 35;
+        allRows.forEach((count, ri) => {
+            const yPct = 88 - (ri / (total - 1)) * 80;
             for (let pi = 0; pi < count; pi++) {
-                const yFrac = (pi + 1) / (count + 1);
-                const y = 8 + yFrac * 84;
-                positions.push({ x: xBase, y });
+                positions.push({ x: ((pi + 1) / (count + 1)) * 100, y: yPct });
             }
         });
-
         return positions;
     },
 
-    _luBuildPitchTokens(starters, formation, side) {
-        const positions = this._luFormationPositions(formation, side);
-        return starters.map((p, i) => {
-            const pos = positions[i] || { x: side === 'home' ? 25 : 75, y: 50 };
-            return this._luPlayerToken(p, pos.x, pos.y, side);
+    _luBuildPitchHTML(parsed) {
+        const positions = this._luFormationRows(parsed.formation);
+        return parsed.starters.map((p, i) => {
+            const pos = positions[i] || { x: 50, y: 50 };
+            const imgUrl = this._luGetPlayerImageUrl(p.athleteId);
+            const shortName = p.name.split(' ').pop();
+            const evIcons = [];
+            if (p.playerEvs.includes('goal'))   evIcons.push('<i class="fas fa-futbol os-lu-ev-goal"></i>');
+            if (p.playerEvs.includes('yellow')) evIcons.push('<i class="fas fa-square os-lu-ev-yellow"></i>');
+            if (p.playerEvs.includes('red'))    evIcons.push('<i class="fas fa-square os-lu-ev-red"></i>');
+            if (p.isSubOff) evIcons.push('<i class="fas fa-arrow-down os-lu-ev-suboff"></i>');
+            const evHtml = evIcons.length ? `<div class="os-lu-tok-evs">${evIcons.join('')}</div>` : '';
+            return `<div class="os-lu-tok" style="left:${pos.x}%;top:${pos.y}%;">
+                <div class="os-lu-tok-photo-wrap">
+                    <img class="os-lu-tok-photo" src="${imgUrl}" width="44" height="44"
+                        loading="lazy" decoding="async" alt="${p.name}"
+                        onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                    <div class="os-lu-tok-fallback" style="display:none;">${p.num || '?'}</div>
+                    ${p.isCap ? '<div class="os-lu-tok-cap">C</div>' : ''}${evHtml}
+                </div>
+                <div class="os-lu-tok-num">${p.num}</div>
+                <div class="os-lu-tok-name">${shortName}</div>
+            </div>`;
         }).join('');
     },
 
-    _luPlayerRow(p) {
-        const evIcons = p.playerEvs.map(e => {
-            if (e.includes('goal'))   return '<i class="fas fa-futbol os-lu-icon-goal"></i>';
-            if (e.includes('yellow')) return '<i class="fas fa-square os-lu-icon-yellow"></i>';
-            if (e.includes('red'))    return '<i class="fas fa-square os-lu-icon-red"></i>';
-            if (e === 'subbed-on')    return '<i class="fas fa-arrow-up os-lu-icon-sub-on"></i>';
-            return '';
-        }).filter(Boolean).join('');
-
-        return `
-            <div class="os-lu-row ${p.isSubOn ? 'subbed-on' : ''}">
-                <div class="os-lu-num">${p.num || '-'}</div>
-                <div class="os-lu-player">
-                    <div class="os-lu-pname">
-                        ${p.name}
-                        ${p.isCap ? '<span class="os-lu-cap">C</span>' : ''}
-                    </div>
-                    <div class="os-lu-ppos">${p.pos}</div>
-                </div>
-                ${evIcons ? `<div class="os-lu-event-icons">${evIcons}</div>` : ''}
-            </div>
-        `;
+    _luSubRow(p) {
+        const evs = [];
+        if (p.playerEvs.includes('goal'))   evs.push('<i class="fas fa-futbol os-lu-ev-goal"></i>');
+        if (p.playerEvs.includes('yellow')) evs.push('<i class="fas fa-square os-lu-ev-yellow"></i>');
+        if (p.playerEvs.includes('red'))    evs.push('<i class="fas fa-square os-lu-ev-red"></i>');
+        if (p.isSubOn) evs.push(`<i class="fas fa-arrow-up os-lu-ev-subon"></i>${p.subTime ? `<span class="os-lu-subtime">${p.subTime}'</span>` : ''}`);
+        return `<div class="os-lu-sub-row${p.isSubOn ? ' subbed-on' : ''}">
+            <span class="os-lu-sub-num">${p.num || '-'}</span>
+            <span class="os-lu-sub-name">${p.name}${p.isCap ? ' <span class="os-lu-cap">C</span>' : ''}</span>
+            <span class="os-lu-sub-pos">${p.pos}</span>
+            ${evs.length ? `<span class="os-lu-sub-evs">${evs.join('')}</span>` : ''}
+        </div>`;
     },
 
-    _luBuildTeamListCol(competitor, parsed, logoUrl) {
+    _luBuildTeamPanel(competitor, parsed, logoUrl) {
         const name = Security.escapeHTML(competitor.name);
-        const starterRows = parsed.starters.map(p => this._luPlayerRow(p)).join('');
-        const subRows = parsed.subs.map(p => this._luPlayerRow(p)).join('');
-        return `
-            <div class="os-lu-team-col">
-                <div class="os-lu-team-head">
-                    <img src="${logoUrl}" class="os-lu-team-logo" width="28" height="28" loading="lazy" decoding="async" alt="${name}">
-                    <span class="os-lu-team-name">${name}</span>
-                    ${parsed.formation ? `<span class="os-lu-formation">${parsed.formation}</span>` : ''}
+        const pitchTokens = this._luBuildPitchHTML(parsed);
+        const subRows = parsed.subs.map(p => this._luSubRow(p)).join('') || '<div class="os-lu-empty">No substitutes listed</div>';
+        return `<div class="os-lu-panel">
+            <div class="os-lu-pitch-bg">
+                <div class="os-lu-pitch-marks">
+                    <div class="os-lu-pm-border"></div>
+                    <div class="os-lu-pm-halfway"></div>
+                    <div class="os-lu-pm-circle"></div>
+                    <div class="os-lu-pm-box-top"></div>
+                    <div class="os-lu-pm-box-bot"></div>
+                    <div class="os-lu-pm-goal-top"></div>
+                    <div class="os-lu-pm-goal-bot"></div>
                 </div>
-                <div class="os-lu-section">
-                    <div class="os-lu-sect-title">Starting XI</div>
-                    <div class="os-lu-list">${starterRows || '<div class="os-lu-empty">Pending...</div>'}</div>
-                </div>
-                <div class="os-lu-section">
-                    <div class="os-lu-sect-title">Substitutes</div>
-                    <div class="os-lu-list">${subRows || '<div class="os-lu-empty">—</div>'}</div>
-                </div>
-                <div class="os-lu-coach-row">
-                    <span class="os-lu-coach-lbl">Manager</span>
-                    <span class="os-lu-coach-name">${parsed.coach}</span>
+                <div class="os-lu-pitch-players">${pitchTokens}</div>
+            </div>
+            <div class="os-lu-below">
+                <div class="os-lu-subs-title"><i class="fas fa-exchange-alt"></i> Substitutes</div>
+                <div class="os-lu-subs-list">${subRows}</div>
+                <div class="os-lu-manager-row">
+                    <i class="fas fa-user-tie"></i>
+                    <span class="os-lu-manager-lbl">Manager</span>
+                    <span class="os-lu-manager-name">${parsed.coach}</span>
                 </div>
             </div>
-        `;
+        </div>`;
     },
 
     buildTeamLineupHTML(teamName, teamLogo, lineup, athletes) {
-        // Legacy stub — kept for compatibility, not used in new render
-        return '';
+        return ''; // legacy stub
     },
 
     renderLineups(data) {
         const container = this.elements['os-match-lineups'];
         if (!container) return;
-
         const game = data.game;
-        const hc = game.homeCompetitor;
-        const ac = game.awayCompetitor;
-        const members = game.members || [];
-        const events = game.events || [];
-
+        const hc = game.homeCompetitor, ac = game.awayCompetitor;
+        const members = game.members || [], events = game.events || [];
         const hasHome = hc.lineups && hc.lineups.members && hc.lineups.members.length > 0;
         const hasAway = ac.lineups && ac.lineups.members && ac.lineups.members.length > 0;
-
         if (!hasHome && !hasAway) {
-            container.innerHTML = `
-                <div class="os-lu-wrap">
-                    <div class="os-lu-header-bar">
-                        <span class="os-mi-header" style="margin:0;border:none;padding:0;">Match Lineups</span>
-                    </div>
-                    <div style="text-align:center;padding:30px;color:var(--text-muted);font-family:var(--font-main);">
-                        Official lineups have not been released yet.
-                    </div>
-                </div>
-            `;
+            container.innerHTML = `<div class="os-lu-outer"><div class="os-lu-top-bar"><span class="os-mi-header" style="margin:0;border:none;padding:0;">Match Lineups</span></div><div style="text-align:center;padding:40px;color:var(--text-muted);font-family:var(--font-main);">Official lineups have not been released yet.</div></div>`;
             return;
         }
-
         const homeParsed = this._luParseTeam(hc, members, events);
         const awayParsed = this._luParseTeam(ac, members, events);
         const homeLogo = Helpers.getLogoUrl(hc.id, hc.imageVersion);
         const awayLogo = Helpers.getLogoUrl(ac.id, ac.imageVersion);
-
-        // Pitch tokens
-        const homePitchTokens = this._luBuildPitchTokens(homeParsed.starters, homeParsed.formation, 'home');
-        const awayPitchTokens = this._luBuildPitchTokens(awayParsed.starters, awayParsed.formation, 'away');
-
-        // List cols
-        const homeListCol = this._luBuildTeamListCol(hc, homeParsed, homeLogo);
-        const awayListCol = this._luBuildTeamListCol(ac, awayParsed, awayLogo);
-
-        const totalPlayers = homeParsed.starters.length + awayParsed.starters.length;
-
-        const html = `
-            <div class="os-lu-wrap">
-                <div class="os-lu-header-bar">
-                    <span class="os-mi-header" style="margin:0;border:none;padding:0;">Match Lineups</span>
-                    <div class="os-lu-formations">
-                        <span class="os-lu-form-badge">${homeParsed.formation || '—'}</span>
-                        <span class="os-lu-form-sep">vs</span>
-                        <span class="os-lu-form-badge">${awayParsed.formation || '—'}</span>
-                    </div>
-                    <div class="os-lu-tabs">
-                        <button class="os-lu-tab active" id="os-lu-tab-pitch" onclick="
-                            document.getElementById('os-lu-tab-pitch').classList.add('active');
-                            document.getElementById('os-lu-tab-list').classList.remove('active');
-                            document.getElementById('os-lu-pitch-view').classList.remove('hidden');
-                            document.getElementById('os-lu-list-view').classList.remove('visible');
-                        ">Pitch</button>
-                        <button class="os-lu-tab" id="os-lu-tab-list" onclick="
-                            document.getElementById('os-lu-tab-list').classList.add('active');
-                            document.getElementById('os-lu-tab-pitch').classList.remove('active');
-                            document.getElementById('os-lu-list-view').classList.add('visible');
-                            document.getElementById('os-lu-pitch-view').classList.add('hidden');
-                        ">Lists</button>
-                    </div>
+        const homePanel = this._luBuildTeamPanel(hc, homeParsed, homeLogo);
+        const awayPanel = this._luBuildTeamPanel(ac, awayParsed, awayLogo);
+        const hn = Security.escapeHTML(hc.name), an = Security.escapeHTML(ac.name);
+        const html = `<div class="os-lu-outer">
+            <div class="os-lu-top-bar">
+                <span class="os-mi-header" style="margin:0;border:none;padding:0;">Match Lineups</span>
+                <div class="os-lu-switcher">
+                    <button class="os-lu-sw-btn active" id="os-lu-sw-home" onclick="document.getElementById('os-lu-sw-home').classList.add('active');document.getElementById('os-lu-sw-away').classList.remove('active');document.getElementById('os-lu-home-panel').style.display='';document.getElementById('os-lu-away-panel').style.display='none';">
+                        <img src="${homeLogo}" width="16" height="16" style="object-fit:contain;vertical-align:middle;margin-right:4px;" alt="">
+                        ${hn} <span class="os-lu-sw-form">${homeParsed.formation}</span>
+                    </button>
+                    <button class="os-lu-sw-btn" id="os-lu-sw-away" onclick="document.getElementById('os-lu-sw-away').classList.add('active');document.getElementById('os-lu-sw-home').classList.remove('active');document.getElementById('os-lu-away-panel').style.display='';document.getElementById('os-lu-home-panel').style.display='none';">
+                        <img src="${awayLogo}" width="16" height="16" style="object-fit:contain;vertical-align:middle;margin-right:4px;" alt="">
+                        ${an} <span class="os-lu-sw-form">${awayParsed.formation}</span>
+                    </button>
                 </div>
-                <div class="os-lu-scroll-body" id="os-lu-body">
-                    <!-- Pitch view -->
-                    <div class="os-lu-pitch-view" id="os-lu-pitch-view">
-                        <div class="os-lu-pitch">
-                            <div class="os-lu-pitch-line"></div>
-                            <div class="os-lu-pitch-circle"></div>
-                            <div class="os-lu-penalty-l"></div>
-                            <div class="os-lu-penalty-r"></div>
-                            ${homePitchTokens}
-                            ${awayPitchTokens}
-                        </div>
-                    </div>
-                    <!-- List view -->
-                    <div class="os-lu-list-view" id="os-lu-list-view">
-                        <div class="os-lu-list-grid">
-                            ${homeListCol}
-                            ${awayListCol}
-                        </div>
-                    </div>
-                </div>
-                <button class="os-cm-toggle" id="os-lu-toggle" onclick="
-                    var b = document.getElementById('os-lu-body');
-                    var btn = document.getElementById('os-lu-toggle');
-                    var outer = btn.closest('#os-match-lineups');
-                    var expanded = b.classList.toggle('os-cm-expanded');
-                    if (outer) outer.classList.toggle('os-cm-open', expanded);
-                    btn.innerHTML = expanded
-                        ? '<i class=\\'fas fa-chevron-up\\'></i> Show Less'
-                        : '<i class=\\'fas fa-chevron-down\\'></i> Show Full Lineups';
-                "><i class="fas fa-chevron-down"></i> Show Full Lineups</button>
             </div>
-        `;
-
+            <div id="os-lu-home-panel">${homePanel}</div>
+            <div id="os-lu-away-panel" style="display:none;">${awayPanel}</div>
+        </div>`;
         const frag = document.createRange().createContextualFragment(html);
         container.innerHTML = '';
         container.appendChild(frag);
