@@ -52,9 +52,20 @@ const Router = {
 };
 
 const MatchRenderer = {
+
     render() {
+
         console.log("Rendering Match Page");
+
+        OneSportsApp.shell.hero.innerHTML = `
+            <div class="glass-card" style="padding:40px;text-align:center;">
+                <h1>${OneSportsApp.post.title}</h1>
+                <p>Match Page Renderer Working</p>
+            </div>
+        `;
+
     }
+
 };
 
 /**
