@@ -125,35 +125,44 @@ const HeroRenderer = {
         BaseRenderer.render(
             OneSportsApp.shell.hero,
             `
-            <div class="os-hero-inner" style="text-align: center; padding: 40px; background: var(--bg-card, #1e1e1e); border-radius: var(--radius-lg, 12px);">
+            <div class="os-hero-inner">
                 
-                <div class="os-hero-header" style="margin-bottom: 30px;">
-                    <div class="os-hero-competition" style="text-transform: uppercase; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px; color: var(--text-muted, #888);">${HeroModel.competition}</div>
-                    <div class="os-hero-stage" style="font-size: 0.85rem; color: var(--text-muted, #888); margin-top: 5px;">${HeroModel.stage}</div>
+                <div class="os-hero-header">
+                    <div class="os-hero-competition">${HeroModel.competition || "TBD"}</div>
+                    <div class="os-hero-stage">${HeroModel.stage || "TBD"}</div>
+                    <div class="os-hero-status">${HeroModel.status || "TBD"}</div>
                 </div>
 
-                <div class="os-hero-teams" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                    <div class="os-hero-team os-hero-home" style="flex: 1; text-align: center;">
-                        <div class="os-hero-team-name" style="font-size: 1.5rem; font-weight: 600;">${HeroModel.homeTeam}</div>
-                        <div class="os-hero-score" style="font-size: 3rem; font-weight: 800; margin-top: 10px;">${HeroModel.homeScore}</div>
+                <div class="os-hero-scoreboard">
+                    <div class="os-team os-team-home">
+                        <div class="os-team-logo">${HeroModel.homeLogo ? `<img src="${HeroModel.homeLogo}" alt="Home">` : '<div class="os-logo-placeholder"></div>'}</div>
+                        <div class="os-team-name">${HeroModel.homeTeam || "TBD"}</div>
+                        <div class="os-team-score">${HeroModel.homeScore !== "" ? HeroModel.homeScore : "-"}</div>
                     </div>
-
-                    <div class="os-hero-vs" style="font-size: 1rem; font-weight: 700; color: var(--text-muted, #888); padding: 0 20px;">VS</div>
-
-                    <div class="os-hero-team os-hero-away" style="flex: 1; text-align: center;">
-                        <div class="os-hero-team-name" style="font-size: 1.5rem; font-weight: 600;">${HeroModel.awayTeam}</div>
-                        <div class="os-hero-score" style="font-size: 3rem; font-weight: 800; margin-top: 10px;">${HeroModel.awayScore}</div>
+                    
+                    <div class="os-hero-vs">VS</div>
+                    
+                    <div class="os-team os-team-away">
+                        <div class="os-team-score">${HeroModel.awayScore !== "" ? HeroModel.awayScore : "-"}</div>
+                        <div class="os-team-name">${HeroModel.awayTeam || "TBD"}</div>
+                        <div class="os-team-logo">${HeroModel.awayLogo ? `<img src="${HeroModel.awayLogo}" alt="Away">` : '<div class="os-logo-placeholder"></div>'}</div>
                     </div>
                 </div>
 
-                <div class="os-hero-status" style="margin-bottom: 20px;">
-                    <span class="os-badge" style="display: inline-block; padding: 4px 12px; background: var(--accent-danger, #e63946); color: white; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; border-radius: 4px;">${HeroModel.status}</span>
-                    <div class="os-hero-time" style="font-size: 1.2rem; font-weight: 600; margin-top: 10px;">${HeroModel.kickoff}</div>
+                <div class="os-hero-meta">
+                    <div class="os-hero-kickoff">${HeroModel.kickoff || "TBD"}</div>
+                    <div class="os-hero-countdown">--:--:--</div>
                 </div>
 
-                <div class="os-hero-venue" style="font-size: 0.9rem; color: var(--text-muted, #888);">
-                    <div>${HeroModel.stadium}</div>
-                    <div>${HeroModel.city}</div>
+                <div class="os-hero-venue">
+                    <div class="os-venue-stadium">${HeroModel.stadium || "TBD"}</div>
+                    <div class="os-venue-city">${HeroModel.city || "TBD"}</div>
+                </div>
+
+                <div class="os-hero-extra">
+                    <div class="os-extra-weather">Weather: ${HeroModel.weather || "Not available"}</div>
+                    <div class="os-extra-referee">Referee: ${HeroModel.referee || "TBD"}</div>
+                    <div class="os-extra-attendance">Attendance: ${HeroModel.attendance || "Not available"}</div>
                 </div>
 
             </div>
