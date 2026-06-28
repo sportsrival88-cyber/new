@@ -66,14 +66,27 @@ const BaseRenderer = {
 
 };
 
+const HeroModel = {
+    competition: "",
+    homeTeam: "",
+    awayTeam: "",
+    homeLogo: "",
+    awayLogo: "",
+    score: "",
+    kickoff: "",
+    status: "",
+    background: ""
+};
+
 const HeroRenderer = {
     render() {
         BaseRenderer.render(
             OneSportsApp.shell.hero,
             `
             <div class="glass-card" style="padding:40px;text-align:center;">
-                <h1>${OneSportsApp.post.title}</h1>
-                <p>Match Page Renderer Working</p>
+                <h1>${HeroModel.homeTeam} vs ${HeroModel.awayTeam}</h1>
+                <p>${HeroModel.competition}</p>
+                <p>Status: ${HeroModel.status}</p>
             </div>
             `
         );
@@ -159,6 +172,19 @@ const MatchRenderer = {
 
     render() {
         console.log("Rendering Match Page");
+        
+        Object.assign(HeroModel, {
+            competition: "FIFA World Cup",
+            homeTeam: "Croatia",
+            awayTeam: "Brazil",
+            homeLogo: "",
+            awayLogo: "",
+            score: "0 - 0",
+            kickoff: "20:00",
+            status: "Upcoming",
+            background: ""
+        });
+
         HeroRenderer.render();
         TimelineRenderer.render();
         StatisticsRenderer.render();
