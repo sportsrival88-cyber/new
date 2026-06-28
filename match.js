@@ -774,6 +774,268 @@ const MatchRenderer = {
         container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">Unable to load lineups.</div>`;
     },
 
+    // ── Lineup helpers ──────────────────────────────────────────────────────
+
+    _luGetPlayerImageUrl(athleteId) {
+        // 365scores player image CDN — falls back gracefully on error
+        return `https://imagecache.365scores.com/image/upload/f_png,w_60,h_60,c_fill,q_auto:eco,d_Athletes:default1.png/v1/Athletes/${athleteId}`;
+    },
+
+    _luParseTeam(competitor, members, events) {
+        const starters = [], subs = [], coachName = 'Not announced';
+        let coachResult = coachName;
+        const lineup = competitor.lineups;
+        if (!lineup || !lineup.members) return { starters, subs, coach: coachResult, formation: '' };
+
+        // Build event lookup: playerId → array of event types
+        const evMap = {};
+        (events || []).forEach(ev => {
+            if (!ev.competitorId || ev.competitorId !== competitor.id) return;
+            const pid = ev.playerId;
+            if (!pid) return;
+            if (!evMap[pid]) evMap[pid] = [];
+            const n = String(ev.eventType ? ev.eventType.name : (ev.type || '')).toLowerCase();
+            evMap[pid].push(n);
+            // Sub-on: track the incoming player
+            if (n.includes('sub') && ev.extraPlayers && ev.extraPlayers.length > 0) {
+                const inId = ev.extraPlayers[0];
+                if (!evMap[inId]) evMap[inId] = [];
+                evMap[inId].push('subbed-on');
+            }
+        });
+
+        lineup.members.forEach(member => {
+            const athlete = members ? members.find(a => a.id === member.id) : null;
+            const name = Security.escapeHTML(athlete ? athlete.name : (member.name || 'Unknown'));
+            const num = String(athlete && athlete.jerseyNum ? athlete.jerseyNum : (member.jerseyNumber || ''));
+            const pos = Security.escapeHTML(member.position ? member.position.name : '');
+            const isCap = member.statusText === 'Captain' || (athlete && athlete.isCaptain);
+            const athleteId = member.id;
+            const playerEvs = evMap[athleteId] || [];
+            const isSubOn = playerEvs.includes('subbed-on');
+
+            const p = { name, num, pos, isCap, athleteId, playerEvs, isSubOn, member };
+            if (member.status === 1) starters.push(p);
+            else if (member.status === 2) subs.push(p);
+            else if (member.status === 4) coachResult = name;
+        });
+
+        return { starters, subs, coach: coachResult, formation: lineup.formation || '' };
+    },
+
+    _luPlayerToken(p, xPct, yPct, side) {
+        const imgUrl = this._luGetPlayerImageUrl(p.athleteId);
+        const shortName = p.name.split(' ').pop(); // last name only on pitch
+        return `
+            <div class="os-lu-player-token ${side}" style="left:${xPct}%;top:${yPct}%;">
+                <div style="position:relative;">
+                    <img class="os-lu-avatar" src="${imgUrl}" width="32" height="32"
+                        loading="lazy" decoding="async" alt="${p.name}"
+                        onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                    <div class="os-lu-avatar-fallback" style="display:none;">${p.num || '?'}</div>
+                    ${p.num ? `<div class="os-lu-token-num">${p.num}</div>` : ''}
+                </div>
+                <div class="os-lu-token-name">${shortName}</div>
+            </div>
+        `;
+    },
+
+    _luFormationPositions(formation, side) {
+        // Returns array of {x,y} percent positions for each player in formation order
+        // side: 'home' = left half (x: 5%–47%), 'away' = right half (x: 53%–95%)
+        // Goalkeeper always at the back, rows built from the formation string e.g. "4-3-3"
+        const rows = String(formation).split('-').map(Number).filter(n => n > 0);
+        const positions = [];
+        const isHome = side === 'home';
+
+        // GK
+        const gkX = isHome ? 5 : 95;
+        positions.push({ x: gkX, y: 50 });
+
+        // Field rows
+        const totalRows = rows.length;
+        rows.forEach((count, ri) => {
+            // x: distribute rows evenly between 12% and 47% (home) or 53% and 88% (away)
+            const rowFrac = (ri + 1) / (totalRows + 1);
+            const xBase = isHome ? 12 + rowFrac * 35 : 88 - rowFrac * 35;
+            for (let pi = 0; pi < count; pi++) {
+                const yFrac = (pi + 1) / (count + 1);
+                const y = 8 + yFrac * 84;
+                positions.push({ x: xBase, y });
+            }
+        });
+
+        return positions;
+    },
+
+    _luBuildPitchTokens(starters, formation, side) {
+        const positions = this._luFormationPositions(formation, side);
+        return starters.map((p, i) => {
+            const pos = positions[i] || { x: side === 'home' ? 25 : 75, y: 50 };
+            return this._luPlayerToken(p, pos.x, pos.y, side);
+        }).join('');
+    },
+
+    _luPlayerRow(p) {
+        const evIcons = p.playerEvs.map(e => {
+            if (e.includes('goal'))   return '<i class="fas fa-futbol os-lu-icon-goal"></i>';
+            if (e.includes('yellow')) return '<i class="fas fa-square os-lu-icon-yellow"></i>';
+            if (e.includes('red'))    return '<i class="fas fa-square os-lu-icon-red"></i>';
+            if (e === 'subbed-on')    return '<i class="fas fa-arrow-up os-lu-icon-sub-on"></i>';
+            return '';
+        }).filter(Boolean).join('');
+
+        return `
+            <div class="os-lu-row ${p.isSubOn ? 'subbed-on' : ''}">
+                <div class="os-lu-num">${p.num || '-'}</div>
+                <div class="os-lu-player">
+                    <div class="os-lu-pname">
+                        ${p.name}
+                        ${p.isCap ? '<span class="os-lu-cap">C</span>' : ''}
+                    </div>
+                    <div class="os-lu-ppos">${p.pos}</div>
+                </div>
+                ${evIcons ? `<div class="os-lu-event-icons">${evIcons}</div>` : ''}
+            </div>
+        `;
+    },
+
+    _luBuildTeamListCol(competitor, parsed, logoUrl) {
+        const name = Security.escapeHTML(competitor.name);
+        const starterRows = parsed.starters.map(p => this._luPlayerRow(p)).join('');
+        const subRows = parsed.subs.map(p => this._luPlayerRow(p)).join('');
+        return `
+            <div class="os-lu-team-col">
+                <div class="os-lu-team-head">
+                    <img src="${logoUrl}" class="os-lu-team-logo" width="28" height="28" loading="lazy" decoding="async" alt="${name}">
+                    <span class="os-lu-team-name">${name}</span>
+                    ${parsed.formation ? `<span class="os-lu-formation">${parsed.formation}</span>` : ''}
+                </div>
+                <div class="os-lu-section">
+                    <div class="os-lu-sect-title">Starting XI</div>
+                    <div class="os-lu-list">${starterRows || '<div class="os-lu-empty">Pending...</div>'}</div>
+                </div>
+                <div class="os-lu-section">
+                    <div class="os-lu-sect-title">Substitutes</div>
+                    <div class="os-lu-list">${subRows || '<div class="os-lu-empty">—</div>'}</div>
+                </div>
+                <div class="os-lu-coach-row">
+                    <span class="os-lu-coach-lbl">Manager</span>
+                    <span class="os-lu-coach-name">${parsed.coach}</span>
+                </div>
+            </div>
+        `;
+    },
+
+    buildTeamLineupHTML(teamName, teamLogo, lineup, athletes) {
+        // Legacy stub — kept for compatibility, not used in new render
+        return '';
+    },
+
+    renderLineups(data) {
+        const container = this.elements['os-match-lineups'];
+        if (!container) return;
+
+        const game = data.game;
+        const hc = game.homeCompetitor;
+        const ac = game.awayCompetitor;
+        const members = game.members || [];
+        const events = game.events || [];
+
+        const hasHome = hc.lineups && hc.lineups.members && hc.lineups.members.length > 0;
+        const hasAway = ac.lineups && ac.lineups.members && ac.lineups.members.length > 0;
+
+        if (!hasHome && !hasAway) {
+            container.innerHTML = `
+                <div class="os-lu-wrap">
+                    <div class="os-lu-header-bar">
+                        <span class="os-mi-header" style="margin:0;border:none;padding:0;">Match Lineups</span>
+                    </div>
+                    <div style="text-align:center;padding:30px;color:var(--text-muted);font-family:var(--font-main);">
+                        Official lineups have not been released yet.
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        const homeParsed = this._luParseTeam(hc, members, events);
+        const awayParsed = this._luParseTeam(ac, members, events);
+        const homeLogo = Helpers.getLogoUrl(hc.id, hc.imageVersion);
+        const awayLogo = Helpers.getLogoUrl(ac.id, ac.imageVersion);
+
+        // Pitch tokens
+        const homePitchTokens = this._luBuildPitchTokens(homeParsed.starters, homeParsed.formation, 'home');
+        const awayPitchTokens = this._luBuildPitchTokens(awayParsed.starters, awayParsed.formation, 'away');
+
+        // List cols
+        const homeListCol = this._luBuildTeamListCol(hc, homeParsed, homeLogo);
+        const awayListCol = this._luBuildTeamListCol(ac, awayParsed, awayLogo);
+
+        const totalPlayers = homeParsed.starters.length + awayParsed.starters.length;
+
+        const html = `
+            <div class="os-lu-wrap">
+                <div class="os-lu-header-bar">
+                    <span class="os-mi-header" style="margin:0;border:none;padding:0;">Match Lineups</span>
+                    <div class="os-lu-formations">
+                        <span class="os-lu-form-badge">${homeParsed.formation || '—'}</span>
+                        <span class="os-lu-form-sep">vs</span>
+                        <span class="os-lu-form-badge">${awayParsed.formation || '—'}</span>
+                    </div>
+                    <div class="os-lu-tabs">
+                        <button class="os-lu-tab active" id="os-lu-tab-pitch" onclick="
+                            document.getElementById('os-lu-tab-pitch').classList.add('active');
+                            document.getElementById('os-lu-tab-list').classList.remove('active');
+                            document.getElementById('os-lu-pitch-view').classList.remove('hidden');
+                            document.getElementById('os-lu-list-view').classList.remove('visible');
+                        ">Pitch</button>
+                        <button class="os-lu-tab" id="os-lu-tab-list" onclick="
+                            document.getElementById('os-lu-tab-list').classList.add('active');
+                            document.getElementById('os-lu-tab-pitch').classList.remove('active');
+                            document.getElementById('os-lu-list-view').classList.add('visible');
+                            document.getElementById('os-lu-pitch-view').classList.add('hidden');
+                        ">Lists</button>
+                    </div>
+                </div>
+                <div class="os-lu-scroll-body" id="os-lu-body">
+                    <!-- Pitch view -->
+                    <div class="os-lu-pitch-view" id="os-lu-pitch-view">
+                        <div class="os-lu-pitch">
+                            <div class="os-lu-pitch-line"></div>
+                            <div class="os-lu-pitch-circle"></div>
+                            <div class="os-lu-penalty-l"></div>
+                            <div class="os-lu-penalty-r"></div>
+                            ${homePitchTokens}
+                            ${awayPitchTokens}
+                        </div>
+                    </div>
+                    <!-- List view -->
+                    <div class="os-lu-list-view" id="os-lu-list-view">
+                        <div class="os-lu-list-grid">
+                            ${homeListCol}
+                            ${awayListCol}
+                        </div>
+                    </div>
+                </div>
+                <button class="os-cm-toggle" id="os-lu-toggle" onclick="
+                    var b = document.getElementById('os-lu-body');
+                    var btn = document.getElementById('os-lu-toggle');
+                    var outer = btn.closest('#os-match-lineups');
+                    var expanded = b.classList.toggle('os-cm-expanded');
+                    if (outer) outer.classList.toggle('os-cm-open', expanded);
+                    btn.innerHTML = expanded
+                        ? '<i class=\\'fas fa-chevron-up\\'></i> Show Less'
+                        : '<i class=\\'fas fa-chevron-down\\'></i> Show Full Lineups';
+                "><i class="fas fa-chevron-down"></i> Show Full Lineups</button>
+            </div>
+        `;
+
+        const frag = document.createRange().createContextualFragment(html);
+        container.innerHTML = '';
+        container.appendChild(frag);
+    },
+
     renderMatchStatsError() {
         const container = this.elements['os-match-stats'];
         if (!container) return;
@@ -783,24 +1045,37 @@ const MatchRenderer = {
     initMatchTimeline() {
         const container = this.elements['os-match-timeline'];
         if (!container) return;
-        
+
         container.innerHTML = `
-            <div class="os-timeline-container">
-                <div class="os-mi-header">Match Timeline</div>
-                <div class="os-timeline-wrapper" id="os-timeline-inner">
-                    <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
-                        <i class="fas fa-spinner fa-spin"></i> Loading timeline...
+            <div class="os-tl-container-wrap">
+                <div class="os-cm-header-bar">
+                    <span class="os-mi-header" style="margin:0; border:none; padding:0;">Match Timeline</span>
+                    <span class="os-cm-count" id="os-tl-count"></span>
+                </div>
+                <div class="os-tl-scroll-body" id="os-tl-body">
+                    <div class="os-timeline-wrapper" id="os-timeline-inner">
+                        <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                            <i class="fas fa-spinner fa-spin"></i> Loading timeline...
+                        </div>
                     </div>
                 </div>
+                <button class="os-cm-toggle" id="os-tl-toggle" style="display:none;" onclick="
+                    var b = document.getElementById('os-tl-body');
+                    var btn = document.getElementById('os-tl-toggle');
+                    var outer = btn.closest('#os-match-timeline');
+                    var expanded = b.classList.toggle('os-cm-expanded');
+                    if (outer) outer.classList.toggle('os-cm-open', expanded);
+                    btn.innerHTML = expanded
+                        ? '<i class=\'fas fa-chevron-up\'></i> Show Less'
+                        : '<i class=\'fas fa-chevron-down\'></i> Show All Events';
+                "><i class="fas fa-chevron-down"></i> Show All Events</button>
             </div>
         `;
-        
+
         const eventsContainer = this.elements['os-match-events'];
-        if (eventsContainer) {
-            eventsContainer.style.display = 'none'; // Optional secondary view
-        }
+        if (eventsContainer) eventsContainer.style.display = 'none';
     },
-    
+
     renderMatchTimelineError() {
         const inner = document.getElementById('os-timeline-inner');
         if (!inner) return;
@@ -837,9 +1112,7 @@ const MatchRenderer = {
         }
 
         const existingCount = inner.querySelectorAll('.os-tl-row').length;
-        if (existingCount === events.length && existingCount > 0) {
-            return; // No new events
-        }
+        if (existingCount === events.length && existingCount > 0) return;
 
         let html = '';
         const homeId = game.homeCompetitor.id;
@@ -883,7 +1156,7 @@ const MatchRenderer = {
                 teamName = game.awayCompetitor.name;
             }
 
-            const scoreHtml = (evName.toLowerCase().includes('goal') && ev.homeScore !== undefined) ? 
+            const scoreHtml = (evName.toLowerCase().includes('goal') && ev.homeScore !== undefined) ?
                 `<div class="os-tl-score">${ev.homeScore} - ${ev.awayScore}</div>` : '';
 
             let rowContent = '';
@@ -905,7 +1178,6 @@ const MatchRenderer = {
                     ${extraName}
                     ${scoreHtml}
                 `;
-                
                 if (sideClass === 'home') {
                     rowContent = `
                         <div class="os-tl-card home-card animate-in">${contentInner}</div>
@@ -925,12 +1197,23 @@ const MatchRenderer = {
         }
 
         if (existingCount === 0) {
-            inner.innerHTML = `
-                <div class="os-tl-line"></div>
-                ${html}
-            `;
+            inner.innerHTML = `<div class="os-tl-line"></div>${html}`;
         } else if (html !== '') {
             inner.insertAdjacentHTML('beforeend', html);
+        }
+
+        // Update count badge and show toggle
+        const totalEvents = inner.querySelectorAll('.os-tl-row').length;
+        const countEl = document.getElementById('os-tl-count');
+        if (countEl) countEl.textContent = `${totalEvents} event${totalEvents !== 1 ? 's' : ''}`;
+        const toggleBtn = document.getElementById('os-tl-toggle');
+        if (toggleBtn) {
+            toggleBtn.style.display = '';
+            // keep button label in sync if not expanded
+            const body = document.getElementById('os-tl-body');
+            if (body && !body.classList.contains('os-cm-expanded')) {
+                toggleBtn.innerHTML = `<i class="fas fa-chevron-down"></i> Show All ${totalEvents} Events`;
+            }
         }
     },
 
@@ -1789,120 +2072,6 @@ const MatchRenderer = {
                 this.animateNumber(aValEl, aValStr, 500);
             }
         });
-    },
-
-    buildTeamLineupHTML(teamName, teamLogo, lineup, athletes) {
-        teamName = Security.escapeHTML(teamName);
-        if (!lineup || !lineup.members || lineup.members.length === 0) {
-            return `
-                <div class="os-lu-team-col">
-                    <div class="os-lu-team-head">
-                        <img src="${teamLogo}" class="os-lu-team-logo" width="60" height="60" loading="lazy" decoding="async" alt="${teamName}">
-                        <span class="os-lu-team-name">${teamName}</span>
-                    </div>
-                    <div class="os-lu-empty">Lineup pending...</div>
-                </div>
-            `;
-        }
-
-        let starters = [], subs = [], coach = "Not announced";
-        let formation = lineup.formation ? lineup.formation : "";
-
-        lineup.members.forEach(member => {
-            const athlete = athletes ? athletes.find(a => a.id === member.id) : null;
-            const name = Security.escapeHTML(athlete ? athlete.name : (member.name || "Unknown"));
-            const num = Security.escapeHTML(athlete && athlete.jerseyNum ? athlete.jerseyNum : (member.jerseyNumber || "-"));
-            const pos = Security.escapeHTML(member.position ? member.position.name : "");
-            
-            // Look for captaincy in member or athlete object
-            const isCap = member.statusText === "Captain" || (athlete && athlete.isCaptain) ? `<span class="os-lu-cap">C</span>` : "";
-
-            const row = `
-                <div class="os-lu-row">
-                    <div class="os-lu-num">${num}</div>
-                    <div class="os-lu-player">
-                        <div class="os-lu-pname">${name} ${isCap}</div>
-                        <div class="os-lu-ppos">${pos}</div>
-                    </div>
-                </div>
-            `;
-
-            if (member.status === 1) starters.push(row);
-            else if (member.status === 2) subs.push(row);
-            else if (member.status === 4) coach = name;
-        });
-
-        return `
-            <div class="os-lu-team-col">
-                <div class="os-lu-team-head">
-                    <img src="${teamLogo}" class="os-lu-team-logo" width="60" height="60" loading="lazy" decoding="async" alt="${teamName}">
-                    <div class="os-lu-team-name">${teamName}</div>
-                    ${formation ? `<div class="os-lu-formation">${formation}</div>` : ''}
-                </div>
-                
-                <div class="os-lu-section">
-                    <div class="os-lu-sect-title">Starting XI</div>
-                    <div class="os-lu-list">${starters.join('')}</div>
-                </div>
-                
-                <div class="os-lu-section">
-                    <div class="os-lu-sect-title">Substitutes</div>
-                    <div class="os-lu-list">${subs.join('')}</div>
-                </div>
-                
-                <div class="os-lu-coach">
-                    <span class="os-lu-coach-lbl">Coach:</span> ${coach}
-                </div>
-            </div>
-        `;
-    },
-
-    renderLineups(data) {
-        const container = this.elements['os-match-lineups'];
-        if (!container) return;
-
-        const game = data.game;
-        const homeCompetitor = game.homeCompetitor;
-        const awayCompetitor = game.awayCompetitor;
-        
-        const hasHomeLineup = homeCompetitor.lineups && homeCompetitor.lineups.members && homeCompetitor.lineups.members.length > 0;
-        const hasAwayLineup = awayCompetitor.lineups && awayCompetitor.lineups.members && awayCompetitor.lineups.members.length > 0;
-
-        if (!hasHomeLineup && !hasAwayLineup) {
-            container.innerHTML = `
-                <div class="os-mi-header">Match Lineups</div>
-                <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
-                    Official lineups have not been released yet.
-                </div>
-            `;
-            return;
-        }
-
-        const homeHtml = this.buildTeamLineupHTML(
-            homeCompetitor.name,
-            Helpers.getLogoUrl(homeCompetitor.id, homeCompetitor.imageVersion),
-            homeCompetitor.lineups,
-            game.members
-        );
-
-        const awayHtml = this.buildTeamLineupHTML(
-            awayCompetitor.name,
-            Helpers.getLogoUrl(awayCompetitor.id, awayCompetitor.imageVersion),
-            awayCompetitor.lineups,
-            game.members
-        );
-
-        const frag = document.createRange().createContextualFragment(`
-            <div class="os-lu-container">
-                <div class="os-mi-header">Match Lineups</div>
-                <div class="os-lu-grid">
-                    ${homeHtml}
-                    ${awayHtml}
-                </div>
-            </div>
-        `);
-        container.innerHTML = '';
-        container.appendChild(frag);
     },
 
     renderMatchInfo(data) {
