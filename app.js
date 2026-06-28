@@ -122,6 +122,21 @@ const RelatedRenderer = {
 
 };
 
+const FooterRenderer = {
+
+    render() {
+
+        OneSportsApp.shell.footer.innerHTML = `
+            <div class="glass-card" style="padding:30px;text-align:center;">
+                <h2>Footer CTA Renderer</h2>
+                <p>Footer CTA component is working.</p>
+            </div>
+        `;
+
+    }
+
+};
+
 const MatchRenderer = {
 
     render() {
@@ -131,6 +146,7 @@ const MatchRenderer = {
         StatisticsRenderer.render();
         StandingsRenderer.render();
         RelatedRenderer.render();
+        FooterRenderer.render();
     }
 
 };
