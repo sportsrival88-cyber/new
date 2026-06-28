@@ -7,6 +7,17 @@
  * and Player stages within the Blogger environment.
  */
 
+const OneSportsApp = {
+    page: null,
+    stage: null,
+
+    post: {},
+
+    shell: {},
+
+    state: {}
+};
+
 /**
  * 1. LOGGER
  * Handles console output and external logging services.
