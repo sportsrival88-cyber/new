@@ -812,6 +812,19 @@ const MatchRenderer = {
         }
     },
 
+    initMatchH2H() {
+        const container = this.elements['os-match-h2h'];
+        if (!container) return;
+        container.innerHTML = `
+            <div class="os-h2h-container">
+                <div class="os-mi-header">Head to Head</div>
+                <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            </div>
+        `;
+    },
+
     renderMatchH2HError() {
         const container = this.elements['os-match-h2h'];
         if (!container) return;
