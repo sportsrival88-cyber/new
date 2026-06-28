@@ -1014,6 +1014,26 @@ class Application {
         OneSportsApp.page = document.getElementById("onesports-page");
         console.log("Page:", OneSportsApp.page);
         
+        if (!OneSportsApp.page) {
+            console.warn("OneSports shell not found.");
+            return;
+        }
+
+        const data = OneSportsApp.page.dataset;
+
+        OneSportsApp.stage = data.stage || "match";
+
+        OneSportsApp.post = {
+            id: data.postId,
+            title: data.title,
+            url: data.postUrl,
+            published: data.published,
+            updated: data.updated
+        };
+
+        console.log("Stage:", OneSportsApp.stage);
+        console.log("Post:", OneSportsApp.post);
+        
         try {
             // Apply global configurations if available from the XML <head>
             const config = window.OneSports || {};
