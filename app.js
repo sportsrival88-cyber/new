@@ -29,6 +29,28 @@ const Logger = {
     error(msg, error = null) { /* TODO: Implement error logging */ }
 };
 
+const Router = {
+    run() {
+        switch (OneSportsApp.stage) {
+
+            case "match":
+                console.log("Loading MATCH page...");
+                break;
+
+            case "streams":
+                console.log("Loading STREAMS page...");
+                break;
+
+            case "watch":
+                console.log("Loading WATCH page...");
+                break;
+
+            default:
+                console.warn("Unknown stage:", OneSportsApp.stage);
+        }
+    }
+};
+
 /**
  * 2. ERROR HANDLER
  * Catches unhandled exceptions and displays fallback UIs to prevent hard crashes.
@@ -964,7 +986,7 @@ const StageManager = {
  * 10. ROUTER
  * Parses the DOM to detect the active stage and triggers the Stage Manager.
  */
-const Router = {
+// const Router = {
     init() {
         Logger.info("Router initialized.");
         const rootElement = document.getElementById("onesports-page");
@@ -1082,3 +1104,5 @@ app.init();
 window.OneSportsApp = OneSportsApp;
 
 console.log("OneSportsApp initialized", OneSportsApp);
+
+Router.run();
