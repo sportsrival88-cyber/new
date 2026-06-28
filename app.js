@@ -139,6 +139,25 @@ const MatchModel = {
     player: {}
 };
 
+const MatchAdapter = {
+
+    adapt(rawData) {
+
+        // Will map API → internal models
+        return {
+            hero: HeroModel,
+            timeline: TimelineModel,
+            statistics: StatisticsModel,
+            standings: {},
+            related: [],
+            stream: {},
+            player: {}
+        };
+
+    }
+
+};
+
 const MatchService = {
 
     async load(fixtureId) {
@@ -146,56 +165,58 @@ const MatchService = {
         console.log("Loading fixture:", fixtureId);
 
         // API will be added later
+        const adapted = MatchAdapter.adapt(null);
 
-        return MatchModel;
+        return adapted;
 
     }
 
 };
 
 const HeroRenderer = {
-    render() {
+    render(data) {
+        if (!data) return;
         BaseRenderer.render(
             OneSportsApp.shell.hero,
             `
             <div class="os-hero-inner">
                 
                 <div class="os-hero-header">
-                    <div class="os-hero-competition">${HeroModel.competition || "TBD"}</div>
-                    <div class="os-hero-stage">${HeroModel.stage || "TBD"}</div>
-                    <div class="os-hero-status">${HeroModel.status || "TBD"}</div>
+                    <div class="os-hero-competition">${data.competition || "TBD"}</div>
+                    <div class="os-hero-stage">${data.stage || "TBD"}</div>
+                    <div class="os-hero-status">${data.status || "TBD"}</div>
                 </div>
 
                 <div class="os-hero-scoreboard">
                     <div class="os-team os-team-home">
-                        <div class="os-team-logo">${HeroModel.homeLogo ? `<img src="${HeroModel.homeLogo}" alt="Home">` : '<div class="os-logo-placeholder"></div>'}</div>
-                        <div class="os-team-name">${HeroModel.homeTeam || "TBD"}</div>
-                        <div class="os-team-score">${HeroModel.homeScore !== "" ? HeroModel.homeScore : "-"}</div>
+                        <div class="os-team-logo">${data.homeLogo ? `<img src="${data.homeLogo}" alt="Home">` : '<div class="os-logo-placeholder"></div>'}</div>
+                        <div class="os-team-name">${data.homeTeam || "TBD"}</div>
+                        <div class="os-team-score">${data.homeScore !== "" ? data.homeScore : "-"}</div>
                     </div>
                     
                     <div class="os-hero-vs">VS</div>
                     
                     <div class="os-team os-team-away">
-                        <div class="os-team-score">${HeroModel.awayScore !== "" ? HeroModel.awayScore : "-"}</div>
-                        <div class="os-team-name">${HeroModel.awayTeam || "TBD"}</div>
-                        <div class="os-team-logo">${HeroModel.awayLogo ? `<img src="${HeroModel.awayLogo}" alt="Away">` : '<div class="os-logo-placeholder"></div>'}</div>
+                        <div class="os-team-score">${data.awayScore !== "" ? data.awayScore : "-"}</div>
+                        <div class="os-team-name">${data.awayTeam || "TBD"}</div>
+                        <div class="os-team-logo">${data.awayLogo ? `<img src="${data.awayLogo}" alt="Away">` : '<div class="os-logo-placeholder"></div>'}</div>
                     </div>
                 </div>
 
                 <div class="os-hero-meta">
-                    <div class="os-hero-kickoff">${HeroModel.kickoff || "TBD"}</div>
+                    <div class="os-hero-kickoff">${data.kickoff || "TBD"}</div>
                     <div class="os-hero-countdown">--:--:--</div>
                 </div>
 
                 <div class="os-hero-venue">
-                    <div class="os-venue-stadium">${HeroModel.stadium || "TBD"}</div>
-                    <div class="os-venue-city">${HeroModel.city || "TBD"}</div>
+                    <div class="os-venue-stadium">${data.stadium || "TBD"}</div>
+                    <div class="os-venue-city">${data.city || "TBD"}</div>
                 </div>
 
                 <div class="os-hero-extra">
-                    <div class="os-extra-weather">Weather: ${HeroModel.weather || "Not available"}</div>
-                    <div class="os-extra-referee">Referee: ${HeroModel.referee || "TBD"}</div>
-                    <div class="os-extra-attendance">Attendance: ${HeroModel.attendance || "Not available"}</div>
+                    <div class="os-extra-weather">Weather: ${data.weather || "Not available"}</div>
+                    <div class="os-extra-referee">Referee: ${data.referee || "TBD"}</div>
+                    <div class="os-extra-attendance">Attendance: ${data.attendance || "Not available"}</div>
                 </div>
 
             </div>
@@ -206,11 +227,11 @@ const HeroRenderer = {
 
 const TimelineRenderer = {
 
-    render() {
+    render(data) {
         let eventsHtml = '';
         
-        if (MatchModel.timeline && MatchModel.timeline.length > 0) {
-            MatchModel.timeline.forEach(event => {
+        if (data && data.length > 0) {
+            data.forEach(event => {
                 let icon = '';
                 if (event.type === 'goal') icon = '⚽';
                 else if (event.type === 'yellow') icon = '🟨';
@@ -238,8 +259,7 @@ const TimelineRenderer = {
 
 const StatisticsRenderer = {
 
-    render() {
-        const stats = MatchModel.statistics;
+    render(stats) {
         
         let statsHtml = '';
         if (stats) {
@@ -332,9 +352,10 @@ const FooterRenderer = {
 
 const MatchRenderer = {
 
-    render() {
+    async render() {
         console.log("Rendering Match Page");
         
+        // Mock data setup for testing
         Object.assign(HeroModel, {
             competition: "FIFA World Cup 2026",
             stage: "Round of 32",
@@ -355,11 +376,13 @@ const MatchRenderer = {
             background: ""
         });
 
-        HeroRenderer.render();
-        TimelineRenderer.render();
-        StatisticsRenderer.render();
-        StandingsRenderer.render();
-        RelatedRenderer.render();
+        const data = await MatchService.load(OneSportsApp.post.id);
+
+        HeroRenderer.render(data.hero);
+        TimelineRenderer.render(data.timeline);
+        StatisticsRenderer.render(data.statistics);
+        StandingsRenderer.render(data.standings);
+        RelatedRenderer.render(data.related);
         FooterRenderer.render();
     }
 
