@@ -680,7 +680,7 @@ const MatchRenderer = {
     },
     
     renderMatchTimelineError() {
-        const inner = this.elements['os-timeline-inner'];
+        const inner = document.getElementById('os-timeline-inner');
         if (!inner) return;
         inner.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">Unable to load match events.</div>`;
     },
@@ -699,7 +699,7 @@ const MatchRenderer = {
     },
 
     renderMatchTimeline(data) {
-        const inner = this.elements['os-timeline-inner'];
+        const inner = document.getElementById('os-timeline-inner');
         if (!inner) return;
 
         const game = data.game;
@@ -732,17 +732,17 @@ const MatchRenderer = {
             const iconHtml = this.getEventIcon(evName);
             
             let playerName = "";
-            if (ev.playerId && data.athletes) {
-                const athlete = data.athletes.find(a => a.id === ev.playerId);
+            if (ev.playerId && game.members) {
+                const athlete = game.members.find(a => a.id === ev.playerId);
                 if (athlete) playerName = Security.escapeHTML(athlete.name);
             } else if (ev.playerName) {
                 playerName = Security.escapeHTML(ev.playerName);
             }
             
             let extraName = "";
-            if (ev.extraPlayers && ev.extraPlayers.length > 0 && data.athletes) {
+            if (ev.extraPlayers && ev.extraPlayers.length > 0 && game.members) {
                 const extraId = ev.extraPlayers[0];
-                const athlete = data.athletes.find(a => a.id === extraId);
+                const athlete = game.members.find(a => a.id === extraId);
                 if (athlete) extraName = `<div class="os-tl-assist">Assist: ${Security.escapeHTML(athlete.name)}</div>`;
             }
 
@@ -1286,7 +1286,7 @@ const MatchRenderer = {
     },
 
     buildStandingsContent(game, standingsObj) {
-        const wrapper = this.elements['os-st-wrapper'];
+        const wrapper = document.getElementById('os-st-wrapper');
         if (!wrapper) return;
         
         if (!standingsObj.rows || standingsObj.rows.length === 0) {
@@ -1365,7 +1365,7 @@ const MatchRenderer = {
                 </div>
             `;
         } else {
-            const tbody = this.elements['os-st-body'];
+            const tbody = document.getElementById('os-st-body');
             
             standingsObj.rows.forEach(row => {
                 const comp = row.competitor;
@@ -1444,7 +1444,7 @@ const MatchRenderer = {
 
     renderRelatedMatches(matches) {
         const container = this.elements['os-related-matches'];
-        const grid = this.elements['os-rm-grid'];
+        const grid = document.getElementById('os-rm-grid');
         if (!container || !grid) return;
 
         if (!matches || matches.length === 0) {
@@ -1743,14 +1743,14 @@ const MatchRenderer = {
             homeCompetitor.name,
             Helpers.getLogoUrl(homeCompetitor.id, homeCompetitor.imageVersion),
             homeCompetitor.lineups,
-            data.athletes
+            game.members
         );
 
         const awayHtml = this.buildTeamLineupHTML(
             awayCompetitor.name,
             Helpers.getLogoUrl(awayCompetitor.id, awayCompetitor.imageVersion),
             awayCompetitor.lineups,
-            data.athletes
+            game.members
         );
 
         const frag = document.createRange().createContextualFragment(`
