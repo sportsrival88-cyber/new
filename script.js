@@ -839,3 +839,11 @@ if (document.readyState === 'loading') {
 } else {
     initApp();
 }
+
+// ==========================================
+// ARTICLE SHELL INITIALIZATION
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("OneSports Article Shell initialized");
+    // Place future article-level scripts here
+});
