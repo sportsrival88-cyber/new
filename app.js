@@ -109,14 +109,83 @@ const TimelineModel = [
 ];
 
 const StatisticsModel = {
-    possession: { home: 48, away: 52 },
-    shots: { home: 11, away: 14 },
-    shotsOnTarget: { home: 5, away: 7 },
-    corners: { home: 4, away: 8 },
-    fouls: { home: 12, away: 10 },
-    yellowCards: { home: 2, away: 1 },
-    redCards: { home: 0, away: 0 },
-    offsides: { home: 1, away: 3 }
+    possessionHome: 0,
+    possessionAway: 0,
+
+    shotsHome: 0,
+    shotsAway: 0,
+
+    shotsOnTargetHome: 0,
+    shotsOnTargetAway: 0,
+
+    cornersHome: 0,
+    cornersAway: 0,
+
+    foulsHome: 0,
+    foulsAway: 0,
+
+    yellowHome: 0,
+    yellowAway: 0,
+
+    redHome: 0,
+    redAway: 0,
+
+    offsidesHome: 0,
+    offsidesAway: 0
+};
+
+StatisticsModel.possessionHome = 58;
+StatisticsModel.possessionAway = 42;
+
+StatisticsModel.shotsHome = 14;
+StatisticsModel.shotsAway = 8;
+
+StatisticsModel.shotsOnTargetHome = 6;
+StatisticsModel.shotsOnTargetAway = 3;
+
+StatisticsModel.cornersHome = 7;
+StatisticsModel.cornersAway = 4;
+
+StatisticsModel.foulsHome = 11;
+StatisticsModel.foulsAway = 15;
+
+StatisticsModel.yellowHome = 1;
+StatisticsModel.yellowAway = 2;
+
+StatisticsModel.redHome = 0;
+StatisticsModel.redAway = 0;
+
+StatisticsModel.offsidesHome = 3;
+StatisticsModel.offsidesAway = 1;
+
+const FooterCTAModel = {
+    title: "Continue Watching",
+    subtitle: "Never miss another World Cup Match",
+    buttonText: "View Full Schedule",
+    buttonUrl: "#",
+    relatedMatches: [
+        {
+            home: "Croatia",
+            away: "Brazil",
+            url: "#",
+            kickoff: "June 30",
+            stage: "Round of 32"
+        },
+        {
+            home: "Argentina",
+            away: "Spain",
+            url: "#",
+            kickoff: "July 1",
+            stage: "Round of 32"
+        },
+        {
+            home: "Portugal",
+            away: "Uruguay",
+            url: "#",
+            kickoff: "July 2",
+            stage: "Round of 32"
+        }
+    ]
 };
 
 const MatchModel = {
@@ -142,14 +211,46 @@ const MatchModel = {
 const MatchAdapter = {
 
     adapt(rawData) {
+        
+        let heroData = { ...HeroModel };
+        
+        if (rawData && !rawData._error) {
+            const home = rawData.homeCompetitor || {};
+            const away = rawData.awayCompetitor || {};
+            
+            const startDate = rawData.startTime ? new Date(rawData.startTime) : null;
+            const kickoffTime = startDate ? startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
+            
+            const venue = rawData.venue || {};
+            
+            heroData = {
+                ...HeroModel,
+                competition: rawData.competitionDisplayName || rawData.competitionName || "",
+                stage: rawData.stageName || rawData.roundName || "",
+                status: rawData.statusText || rawData.shortStatusText || "",
+                kickoff: kickoffTime,
+                stadium: venue.name || "",
+                city: venue.city || venue.country || "",
+                homeTeam: home.name || "",
+                awayTeam: away.name || "",
+                homeLogo: home.id ? Helpers.getLogoUrl(home.id) : "",
+                awayLogo: away.id ? Helpers.getLogoUrl(away.id) : "",
+                homeScore: home.score >= 0 ? home.score : "",
+                awayScore: away.score >= 0 ? away.score : "",
+                weather: "TBD",
+                attendance: "TBD",
+                referee: "TBD"
+            };
+        }
 
         // Will map API → internal models
         return {
-            hero: HeroModel,
+            hero: heroData,
             timeline: TimelineModel,
             statistics: StatisticsModel,
             standings: {},
             related: [],
+            footer: FooterCTAModel,
             stream: {},
             player: {}
         };
@@ -164,8 +265,8 @@ const MatchService = {
 
         console.log("Loading fixture:", fixtureId);
 
-        // API will be added later
-        const adapted = MatchAdapter.adapt(null);
+        const rawData = await APIManager.getFixture(fixtureId);
+        const adapted = MatchAdapter.adapt(rawData);
 
         return adapted;
 
@@ -335,17 +436,41 @@ const RelatedRenderer = {
 
 };
 
-const FooterRenderer = {
+const FooterCTARenderer = {
 
-    render() {
+    render(model) {
+        if (!model) return;
+        
+        let matchesHtml = '';
+        if (model.relatedMatches && model.relatedMatches.length > 0) {
+            model.relatedMatches.forEach(match => {
+                matchesHtml += `
+                    <div class="os-footer-match" style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <h3 style="margin-bottom: 5px; font-size: 1.2rem;">${match.home} vs ${match.away}</h3>
+                        <div style="font-size: 0.9rem; color: var(--text-muted, #888); margin-bottom: 15px;">
+                            ${match.kickoff} &bull; ${match.stage}
+                        </div>
+                        <a href="${match.url}" class="os-btn" style="color: var(--accent-primary, #3b82f6); text-decoration: none; font-weight: bold;">► Read Match</a>
+                    </div>
+                `;
+            });
+        }
 
-        OneSportsApp.shell.footer.innerHTML = `
-            <div class="glass-card" style="padding:30px;text-align:center;">
-                <h2>Footer CTA Renderer</h2>
-                <p>Footer CTA component is working.</p>
+        BaseRenderer.render(
+            OneSportsApp.shell.footer,
+            `
+            <div class="os-footer-cta-inner" style="padding: 40px 20px; text-align: center;">
+                <h4 style="text-transform: uppercase; color: var(--text-muted, #888); font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 10px;">${model.title}</h4>
+                <h2 style="margin-bottom: 40px; font-size: 1.5rem;">${model.subtitle}</h2>
+                
+                <div class="os-footer-matches">
+                    ${matchesHtml}
+                </div>
+                
+                <a href="${model.buttonUrl}" class="os-btn-primary" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: var(--accent-primary, #3b82f6); color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">${model.buttonText}</a>
             </div>
-        `;
-
+            `
+        );
     }
 
 };
@@ -355,27 +480,6 @@ const MatchRenderer = {
     async render() {
         console.log("Rendering Match Page");
         
-        // Mock data setup for testing
-        Object.assign(HeroModel, {
-            competition: "FIFA World Cup 2026",
-            stage: "Round of 32",
-            stadium: "MetLife Stadium",
-            city: "East Rutherford, New Jersey",
-            referee: "TBD",
-            attendance: "82,500",
-            weather: "22°C",
-            kickoff: "20:00",
-            timezone: "UTC-5",
-            status: "Upcoming",
-            homeTeam: "Croatia",
-            awayTeam: "Brazil",
-            homeLogo: "",
-            awayLogo: "",
-            homeScore: 0,
-            awayScore: 0,
-            background: ""
-        });
-
         const data = await MatchService.load(OneSportsApp.post.id);
 
         HeroRenderer.render(data.hero);
@@ -383,7 +487,7 @@ const MatchRenderer = {
         StatisticsRenderer.render(data.statistics);
         StandingsRenderer.render(data.standings);
         RelatedRenderer.render(data.related);
-        FooterRenderer.render();
+        FooterCTARenderer.render(data.footer);
     }
 
 };
