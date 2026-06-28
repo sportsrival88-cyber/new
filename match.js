@@ -1297,6 +1297,7 @@ const MatchRenderer = {
         const homeId = game.homeCompetitor.id;
         const awayId = game.awayCompetitor.id;
 
+        // Find which group each team belongs to
         const homeRow = standingsObj.rows.find(r => r.competitor && r.competitor.id === homeId);
         const awayRow = standingsObj.rows.find(r => r.competitor && r.competitor.id === awayId);
 
@@ -1305,68 +1306,116 @@ const MatchRenderer = {
             return;
         }
 
-        const buildTeamCard = (row) => {
-            if (!row) return '';
-            const comp = row.competitor;
-            const logo = Helpers.getLogoUrl(comp.id, comp.imageVersion);
+        const homeGroupNum = homeRow ? homeRow.groupNum : null;
+        const awayGroupNum = awayRow ? awayRow.groupNum : null;
+        const sameGroup = homeGroupNum !== null && homeGroupNum === awayGroupNum;
 
-            let formHtml = '';
-            if (row.recentForm && row.recentForm.length > 0) {
-                row.recentForm.slice(-5).forEach(f => {
-                    let fClass = 'loss', fChar = 'L';
-                    if (f === 1) { fClass = 'win'; fChar = 'W'; }
-                    else if (f === 2) { fClass = 'draw'; fChar = 'D'; }
-                    formHtml += '<span class="os-st-form-badge ' + fClass + '">' + fChar + '</span>';
-                });
+        const getGroupName = (groupNum) => {
+            if (!groupNum || !standingsObj.groups) return '';
+            const g = standingsObj.groups.find(g => g.num === groupNum);
+            return g ? Security.escapeHTML(g.name) : '';
+        };
+
+        const getDestinationColors = () => {
+            const destColors = {};
+            if (standingsObj.destinations) {
+                standingsObj.destinations.forEach(d => { destColors[d.num] = d.color; });
             }
+            return destColors;
+        };
+        const destColors = getDestinationColors();
+
+        const buildGroupTable = (groupNum, highlightIds) => {
+            const groupRows = standingsObj.rows
+                .filter(r => r.groupNum === groupNum)
+                .sort((a, b) => a.position - b.position);
+            const groupName = getGroupName(groupNum);
+
+            let rowsHtml = '';
+            groupRows.forEach(row => {
+                const comp = row.competitor;
+                const isHighlight = highlightIds.includes(comp.id) ? 'highlight' : '';
+
+                const borderColor = row.destinationNum && destColors[row.destinationNum]
+                    ? destColors[row.destinationNum]
+                    : 'transparent';
+
+                let formHtml = '';
+                if (row.recentForm && row.recentForm.length > 0) {
+                    row.recentForm.slice(-5).forEach(f => {
+                        let fClass = 'loss', fChar = 'L';
+                        if (f === 1) { fClass = 'win'; fChar = 'W'; }
+                        else if (f === 2) { fClass = 'draw'; fChar = 'D'; }
+                        formHtml += `<span class="os-st-form-badge ${fClass}">${fChar}</span>`;
+                    });
+                }
+
+                rowsHtml += `
+                    <div class="os-st-row ${isHighlight}" id="os-st-row-${comp.id}" data-pos="${row.position}" style="border-left: 4px solid ${borderColor};">
+                        <div class="os-st-col pos" data-field="pos">${row.position}</div>
+                        <div class="os-st-col team">
+                            <img src="${Helpers.getLogoUrl(comp.id, comp.imageVersion)}" alt="${Security.escapeHTML(comp.name)}" class="os-st-logo" width="24" height="24" loading="lazy" decoding="async">
+                            <span class="os-st-team-name">${Security.escapeHTML(comp.name)}</span>
+                        </div>
+                        <div class="os-st-col" data-field="played">${row.gamePlayed}</div>
+                        <div class="os-st-col hide-mobile" data-field="won">${row.gamesWon}</div>
+                        <div class="os-st-col hide-mobile" data-field="drawn">${row.gamesEven}</div>
+                        <div class="os-st-col hide-mobile" data-field="lost">${row.gamesLost}</div>
+                        <div class="os-st-col hide-mobile" data-field="goals">${row.for}:${row.against}</div>
+                        <div class="os-st-col" data-field="gd">${row.ratio > 0 ? '+' : ''}${row.ratio}</div>
+                        <div class="os-st-col pts" data-field="pts">${row.points}</div>
+                        <div class="os-st-col form hide-mobile">${formHtml}</div>
+                    </div>
+                `;
+            });
 
             return `
-                <div class="os-st-team-card" id="os-st-row-${comp.id}" data-pos="${row.position}">
-                    <div class="os-st-tc-header">
-                        <img src="${logo}" alt="${Security.escapeHTML(comp.name)}" class="os-st-tc-logo" width="40" height="40" loading="lazy" decoding="async">
-                        <div class="os-st-tc-name">${Security.escapeHTML(comp.name)}</div>
-                        <div class="os-st-tc-pos">Rank #<span data-field="pos">${row.position}</span></div>
+                <div class="os-st-group-block">
+                    <div class="os-st-group-header">
+                        <span class="os-st-group-title">${groupName}</span>
                     </div>
-                    <div class="os-st-tc-stats">
-                        <div class="os-st-tc-stat">
-                            <span class="os-st-tc-val" data-field="played">${row.gamePlayed}</span>
-                            <span class="os-st-tc-lbl">Played</span>
+                    <div class="os-st-table">
+                        <div class="os-st-header-row">
+                            <div class="os-st-col pos">Pos</div>
+                            <div class="os-st-col team">Country</div>
+                            <div class="os-st-col">P</div>
+                            <div class="os-st-col hide-mobile">W</div>
+                            <div class="os-st-col hide-mobile">D</div>
+                            <div class="os-st-col hide-mobile">L</div>
+                            <div class="os-st-col hide-mobile">Goals</div>
+                            <div class="os-st-col">GD</div>
+                            <div class="os-st-col pts">Pts</div>
+                            <div class="os-st-col form hide-mobile">Form</div>
                         </div>
-                        <div class="os-st-tc-stat">
-                            <span class="os-st-tc-val" data-field="won">${row.gamesWon}</span>
-                            <span class="os-st-tc-lbl">Won</span>
-                        </div>
-                        <div class="os-st-tc-stat">
-                            <span class="os-st-tc-val" data-field="drawn">${row.gamesEven}</span>
-                            <span class="os-st-tc-lbl">Drawn</span>
-                        </div>
-                        <div class="os-st-tc-stat">
-                            <span class="os-st-tc-val" data-field="lost">${row.gamesLost}</span>
-                            <span class="os-st-tc-lbl">Lost</span>
-                        </div>
-                        <div class="os-st-tc-stat">
-                            <span class="os-st-tc-val" data-field="goals">${row.for}:${row.against}</span>
-                            <span class="os-st-tc-lbl">Goals</span>
-                        </div>
-                        <div class="os-st-tc-stat highlight-stat">
-                            <span class="os-st-tc-val pts" data-field="pts">${row.points}</span>
-                            <span class="os-st-tc-lbl">Points</span>
+                        <div class="os-st-body">
+                            ${rowsHtml}
                         </div>
                     </div>
-                    ${formHtml ? '<div class="os-st-tc-form">' + formHtml + '</div>' : ''}
                 </div>
             `;
         };
 
-        const standingsName = Security.escapeHTML(standingsObj.name || game.standingsName || 'Group Standings');
+        let innerHtml = '';
+        if (sameGroup) {
+            // Same group: show one table with both highlighted
+            innerHtml = `<div class="os-st-tables-stack">${buildGroupTable(homeGroupNum, [homeId, awayId])}</div>`;
+        } else {
+            // Different groups: show two tables side-by-side
+            const homeTableHtml = homeGroupNum ? buildGroupTable(homeGroupNum, [homeId]) : '';
+            const awayTableHtml = awayGroupNum ? buildGroupTable(awayGroupNum, [awayId]) : '';
+            innerHtml = `
+                <div class="os-st-tables-stack">
+                    ${homeTableHtml}
+                    ${awayTableHtml}
+                </div>
+            `;
+        }
 
+        const displayName = Security.escapeHTML(standingsObj.displayName || standingsObj.name || 'Group Standings');
         container.innerHTML = `
             <div class="os-st-container">
-                <div class="os-mi-header">${standingsName}</div>
-                <div class="os-st-two-team-grid">
-                    ${buildTeamCard(homeRow)}
-                    ${buildTeamCard(awayRow)}
-                </div>
+                <div class="os-mi-header">${displayName}</div>
+                ${innerHtml}
             </div>
         `;
     },
