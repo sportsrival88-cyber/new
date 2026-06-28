@@ -360,48 +360,62 @@ const TimelineRenderer = {
 
 const StatisticsRenderer = {
 
-    render(stats) {
-        
-        let statsHtml = '';
-        if (stats) {
-            const statKeys = [
-                { key: 'possession', label: 'Possession', isPercent: true },
-                { key: 'shots', label: 'Shots', isPercent: false },
-                { key: 'shotsOnTarget', label: 'Shots on Target', isPercent: false },
-                { key: 'corners', label: 'Corners', isPercent: false },
-                { key: 'fouls', label: 'Fouls', isPercent: false },
-                { key: 'yellowCards', label: 'Yellow Cards', isPercent: false },
-                { key: 'redCards', label: 'Red Cards', isPercent: false },
-                { key: 'offsides', label: 'Offsides', isPercent: false }
-            ];
+    render(model) {
 
-            statKeys.forEach(stat => {
-                if (stats[stat.key]) {
-                    let homeVal = stats[stat.key].home + (stat.isPercent ? '%' : '');
-                    let awayVal = stats[stat.key].away + (stat.isPercent ? '%' : '');
-                    
-                    statsHtml += `
-                        <div style="margin-bottom: 15px;">
-                            <div style="font-size: 12px; text-transform: uppercase; margin-bottom: 5px; opacity: 0.8;">${stat.label}</div>
-                            <div style="display: flex; justify-content: center; font-size: 18px; font-weight: bold;">
-                                <span style="margin-right: 20px; width: 40px; text-align: right;">${homeVal}</span>
-                                <span style="margin-left: 20px; width: 40px; text-align: left;">${awayVal}</span>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-        }
+        const container = document.getElementById("os-statistics");
 
-        BaseRenderer.render(
-            OneSportsApp.shell.statistics,
-            `
-            <div class="os-statistics-inner" style="padding: 30px; text-align: center;">
-                <h3 style="text-transform: uppercase; margin-bottom: 20px; font-size: 14px; letter-spacing: 2px;">MATCH STATISTICS</h3>
-                ${statsHtml}
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="glass-card statistics-card">
+
+                <h3 class="statistics-title">
+                    Match Statistics
+                </h3>
+
+                <div class="stat-row">
+                    <span>Possession</span>
+                    <strong>${model.possessionHome}% - ${model.possessionAway}%</strong>
+                </div>
+
+                <div class="stat-row">
+                    <span>Shots</span>
+                    <strong>${model.shotsHome} - ${model.shotsAway}</strong>
+                </div>
+
+                <div class="stat-row">
+                    <span>Shots on Target</span>
+                    <strong>${model.shotsOnTargetHome} - ${model.shotsOnTargetAway}</strong>
+                </div>
+
+                <div class="stat-row">
+                    <span>Corners</span>
+                    <strong>${model.cornersHome} - ${model.cornersAway}</strong>
+                </div>
+
+                <div class="stat-row">
+                    <span>Fouls</span>
+                    <strong>${model.foulsHome} - ${model.foulsAway}</strong>
+                </div>
+
+                <div class="stat-row">
+                    <span>Yellow Cards</span>
+                    <strong>${model.yellowHome} - ${model.yellowAway}</strong>
+                </div>
+
+                <div class="stat-row">
+                    <span>Red Cards</span>
+                    <strong>${model.redHome} - ${model.redAway}</strong>
+                </div>
+
+                <div class="stat-row">
+                    <span>Offsides</span>
+                    <strong>${model.offsidesHome} - ${model.offsidesAway}</strong>
+                </div>
+
             </div>
-            `
-        );
+        `;
+
     }
 
 };
