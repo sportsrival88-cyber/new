@@ -68,13 +68,21 @@ const BaseRenderer = {
 
 const HeroModel = {
     competition: "",
+    stage: "",
+    stadium: "",
+    city: "",
+    referee: "",
+    attendance: "",
+    weather: "",
+    kickoff: "",
+    timezone: "",
+    status: "",
     homeTeam: "",
     awayTeam: "",
     homeLogo: "",
     awayLogo: "",
-    score: "",
-    kickoff: "",
-    status: "",
+    homeScore: 0,
+    awayScore: 0,
     background: ""
 };
 
@@ -175,13 +183,21 @@ const MatchRenderer = {
         
         Object.assign(HeroModel, {
             competition: "FIFA World Cup",
+            stage: "Quarter-Final",
+            stadium: "Education City Stadium",
+            city: "Al Rayyan",
+            referee: "Michael Oliver",
+            attendance: "43893",
+            weather: "Clear, 24°C",
+            kickoff: "15:00",
+            timezone: "UTC",
+            status: "In Progress",
             homeTeam: "Croatia",
             awayTeam: "Brazil",
             homeLogo: "",
             awayLogo: "",
-            score: "0 - 0",
-            kickoff: "20:00",
-            status: "Upcoming",
+            homeScore: 1,
+            awayScore: 1,
             background: ""
         });
 
