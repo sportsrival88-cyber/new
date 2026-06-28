@@ -1286,124 +1286,92 @@ const MatchRenderer = {
     },
 
     buildStandingsContent(game, standingsObj) {
-        const wrapper = document.getElementById('os-st-wrapper');
-        if (!wrapper) return;
-        
-        if (!standingsObj.rows || standingsObj.rows.length === 0) {
-            wrapper.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">Standings empty.</div>`;
-            return;
-        }
+        const container = MatchRenderer.elements['os-group-standings'];
+        if (!container) return;
 
-        const destColors = {};
-        if (standingsObj.destinations) {
-            standingsObj.destinations.forEach(d => {
-                destColors[d.num] = d.color;
-            });
+        if (!standingsObj.rows || standingsObj.rows.length === 0) {
+            container.style.display = 'none';
+            return;
         }
 
         const homeId = game.homeCompetitor.id;
         const awayId = game.awayCompetitor.id;
 
-        const existingTable = wrapper.querySelector('.os-st-table');
-        if (!existingTable) {
-            let rowsHtml = '';
-            standingsObj.rows.forEach(row => {
-                const comp = row.competitor;
-                const isHighlight = (comp.id === homeId || comp.id === awayId) ? 'highlight' : '';
-                
-                const borderStyle = row.destinationNum && destColors[row.destinationNum] 
-                    ? `border-left: 4px solid ${destColors[row.destinationNum]};` 
-                    : 'border-left: 4px solid transparent;';
+        const homeRow = standingsObj.rows.find(r => r.competitor && r.competitor.id === homeId);
+        const awayRow = standingsObj.rows.find(r => r.competitor && r.competitor.id === awayId);
 
-                let formHtml = '';
-                if (row.recentForm) {
-                    row.recentForm.forEach(f => {
-                        let fClass = 'loss';
-                        let fChar = 'L';
-                        if (f === 1) { fClass = 'win'; fChar = 'W'; }
-                        else if (f === 2) { fClass = 'draw'; fChar = 'D'; }
-                        formHtml += `<span class="os-st-form-badge ${fClass}">${fChar}</span>`;
-                    });
-                }
+        if (!homeRow && !awayRow) {
+            container.style.display = 'none';
+            return;
+        }
 
-                rowsHtml += `
-                    <div class="os-st-row ${isHighlight}" id="os-st-row-${comp.id}" style="${borderStyle}" data-pos="${row.position}">
-                        <div class="os-st-col pos" data-field="pos">${row.position}</div>
-                        <div class="os-st-col team">
-                            <img src="${Helpers.getLogoUrl(comp.id, comp.imageVersion)}" alt="${comp.name}" class="os-st-logo" width="24" height="24" loading="lazy" decoding="async">
-                            <span class="os-st-team-name">${comp.name}</span>
+        const buildTeamCard = (row) => {
+            if (!row) return '';
+            const comp = row.competitor;
+            const logo = Helpers.getLogoUrl(comp.id, comp.imageVersion);
+
+            let formHtml = '';
+            if (row.recentForm && row.recentForm.length > 0) {
+                row.recentForm.slice(-5).forEach(f => {
+                    let fClass = 'loss', fChar = 'L';
+                    if (f === 1) { fClass = 'win'; fChar = 'W'; }
+                    else if (f === 2) { fClass = 'draw'; fChar = 'D'; }
+                    formHtml += '<span class="os-st-form-badge ' + fClass + '">' + fChar + '</span>';
+                });
+            }
+
+            return `
+                <div class="os-st-team-card" id="os-st-row-${comp.id}" data-pos="${row.position}">
+                    <div class="os-st-tc-header">
+                        <img src="${logo}" alt="${Security.escapeHTML(comp.name)}" class="os-st-tc-logo" width="40" height="40" loading="lazy" decoding="async">
+                        <div class="os-st-tc-name">${Security.escapeHTML(comp.name)}</div>
+                        <div class="os-st-tc-pos">Rank #<span data-field="pos">${row.position}</span></div>
+                    </div>
+                    <div class="os-st-tc-stats">
+                        <div class="os-st-tc-stat">
+                            <span class="os-st-tc-val" data-field="played">${row.gamePlayed}</span>
+                            <span class="os-st-tc-lbl">Played</span>
                         </div>
-                        <div class="os-st-col" data-field="played">${row.gamePlayed}</div>
-                        <div class="os-st-col hide-mobile" data-field="won">${row.gamesWon}</div>
-                        <div class="os-st-col hide-mobile" data-field="drawn">${row.gamesEven}</div>
-                        <div class="os-st-col hide-mobile" data-field="lost">${row.gamesLost}</div>
-                        <div class="os-st-col hide-mobile" data-field="goals">${row.for}:${row.against}</div>
-                        <div class="os-st-col" data-field="gd">${row.ratio > 0 ? '+' : ''}${row.ratio}</div>
-                        <div class="os-st-col pts" data-field="pts">${row.points}</div>
-                        <div class="os-st-col form hide-mobile">${formHtml}</div>
+                        <div class="os-st-tc-stat">
+                            <span class="os-st-tc-val" data-field="won">${row.gamesWon}</span>
+                            <span class="os-st-tc-lbl">Won</span>
+                        </div>
+                        <div class="os-st-tc-stat">
+                            <span class="os-st-tc-val" data-field="drawn">${row.gamesEven}</span>
+                            <span class="os-st-tc-lbl">Drawn</span>
+                        </div>
+                        <div class="os-st-tc-stat">
+                            <span class="os-st-tc-val" data-field="lost">${row.gamesLost}</span>
+                            <span class="os-st-tc-lbl">Lost</span>
+                        </div>
+                        <div class="os-st-tc-stat">
+                            <span class="os-st-tc-val" data-field="goals">${row.for}:${row.against}</span>
+                            <span class="os-st-tc-lbl">Goals</span>
+                        </div>
+                        <div class="os-st-tc-stat highlight-stat">
+                            <span class="os-st-tc-val pts" data-field="pts">${row.points}</span>
+                            <span class="os-st-tc-lbl">Points</span>
+                        </div>
                     </div>
-                `;
-            });
-
-            wrapper.innerHTML = `
-                <div class="os-st-table">
-                    <div class="os-st-header-row">
-                        <div class="os-st-col pos">#</div>
-                        <div class="os-st-col team">Team</div>
-                        <div class="os-st-col">P</div>
-                        <div class="os-st-col hide-mobile">W</div>
-                        <div class="os-st-col hide-mobile">D</div>
-                        <div class="os-st-col hide-mobile">L</div>
-                        <div class="os-st-col hide-mobile">Goals</div>
-                        <div class="os-st-col">GD</div>
-                        <div class="os-st-col pts">Pts</div>
-                        <div class="os-st-col form hide-mobile">Form</div>
-                    </div>
-                    <div class="os-st-body" id="os-st-body">
-                        ${rowsHtml}
-                    </div>
+                    ${formHtml ? '<div class="os-st-tc-form">' + formHtml + '</div>' : ''}
                 </div>
             `;
-        } else {
-            const tbody = document.getElementById('os-st-body');
-            
-            standingsObj.rows.forEach(row => {
-                const comp = row.competitor;
-                const rowEl = document.getElementById(`os-st-row-${comp.id}`);
-                if (rowEl) {
-                    const updateField = (field, val) => {
-                        const el = rowEl.querySelector(`[data-field="${field}"]`);
-                        if (el && el.innerText != val) {
-                            el.innerText = val;
-                            el.classList.remove('os-st-flash');
-                            void el.offsetWidth;
-                            el.classList.add('os-st-flash');
-                        }
-                    };
+        };
 
-                    updateField('pos', row.position);
-                    updateField('played', row.gamePlayed);
-                    updateField('won', row.gamesWon);
-                    updateField('drawn', row.gamesEven);
-                    updateField('lost', row.gamesLost);
-                    updateField('goals', `${row.for}:${row.against}`);
-                    updateField('gd', row.ratio > 0 ? '+' + row.ratio : row.ratio);
-                    updateField('pts', row.points);
+        const standingsName = Security.escapeHTML(standingsObj.name || game.standingsName || 'Group Standings');
 
-                    const currentPos = parseInt(rowEl.getAttribute('data-pos'));
-                    if (currentPos !== row.position) {
-                        rowEl.setAttribute('data-pos', row.position);
-                    }
-                }
-            });
-
-            const rowsArr = Array.from(tbody.querySelectorAll('.os-st-row'));
-            rowsArr.sort((a, b) => parseInt(a.getAttribute('data-pos')) - parseInt(b.getAttribute('data-pos')));
-            rowsArr.forEach(row => tbody.appendChild(row));
-        }
+        container.innerHTML = `
+            <div class="os-st-container">
+                <div class="os-mi-header">${standingsName}</div>
+                <div class="os-st-two-team-grid">
+                    ${buildTeamCard(homeRow)}
+                    ${buildTeamCard(awayRow)}
+                </div>
+            </div>
+        `;
     },
 
-    initRelatedMatches() {
+        initRelatedMatches() {
         const container = this.elements['os-related-matches'];
         if (!container) return;
         
