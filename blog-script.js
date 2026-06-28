@@ -1,5 +1,3 @@
-﻿}
-
 const UI = {
     init() {
         // Theme Toggle Logic
@@ -52,71 +50,6 @@ const UI = {
                 sideMenu.classList.remove('active');
             });
         }
-
-        // Date Tabs (Yesterday, Today, Tomorrow)
-        const dateTabs = document.querySelectorAll('.date-filters .filter-tab');
-        dateTabs.forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                if (e.target.classList.contains('active')) return; // Already active
-
-                dateTabs.forEach(t => t.classList.remove('active'));
-                e.target.classList.add('active');
-                
-                const day = e.target.getAttribute('data-day');
-                let offset = 0;
-                if (day === 'yesterday') offset = -1;
-                else if (day === 'tomorrow') offset = 1;
-
-                Fixtures.loadDay(offset, true);
-            });
-        });
-
-        // Sport Tabs
-        const sportTabs = document.querySelectorAll('.sport-filters .sport-pill');
-        sportTabs.forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                const btn = e.target.closest('.sport-pill');
-                if (!btn || btn.classList.contains('active')) return;
-
-                sportTabs.forEach(t => t.classList.remove('active'));
-                btn.classList.add('active');
-                
-                Fixtures.currentSport = btn.getAttribute('data-sport');
-                
-                const activeDateTab = document.querySelector('.date-filters .filter-tab.active');
-                let offset = 0;
-                if (activeDateTab) {
-                    const day = activeDateTab.getAttribute('data-day');
-                    if (day === 'yesterday') offset = -1;
-                    else if (day === 'tomorrow') offset = 1;
-                }
-                Fixtures.loadDay(offset, true);
-            });
-        });
-
-        // Standings Group Selector
-        const groupSelector = document.getElementById('group-selector');
-        if (groupSelector) {
-            groupSelector.addEventListener('change', (e) => {
-                // 'A' is charCode 65, which is index 1.
-                Standings.currentGroupNum = e.target.value.charCodeAt(0) - 64; 
-                Standings.render();
-            });
-        }
-
-        // Leaderboards Tabs
-        const statsTabs = document.querySelectorAll('.stats-filters .filter-tab');
-        statsTabs.forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                if (e.target.classList.contains('active')) return;
-
-                statsTabs.forEach(t => t.classList.remove('active'));
-                e.target.classList.add('active');
-                
-                Leaderboards.currentTab = e.target.getAttribute('data-stat');
-                Leaderboards.render();
-            });
-        });
     }
 };
 
