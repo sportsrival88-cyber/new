@@ -1042,3 +1042,7 @@ class Application {
 // =========================================================
 const app = new Application();
 app.init();
+
+window.OneSportsApp = OneSportsApp;
+
+console.log("OneSportsApp initialized", OneSportsApp);
