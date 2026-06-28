@@ -478,7 +478,7 @@ const MatchRenderer = {
         MatchEventBus.on('heroUpdated', (data) => {
             try {
                 Logger.time("renderHero");
-                this.renderHero(data);
+                MatchRenderer.renderHero(data);
                 Logger.timeEnd("renderHero");
             } catch(e) {
                 Logger.error("renderHero Error", e);
@@ -487,7 +487,7 @@ const MatchRenderer = {
         MatchEventBus.on('liveScoreUpdated', (data) => {
             try {
                 Logger.time("renderLiveScore");
-                this.renderLiveScore(data);
+                MatchRenderer.renderLiveScore(data);
                 Logger.timeEnd("renderLiveScore");
             } catch(e) {
                 Logger.error("renderLiveScore Error", e);
@@ -496,7 +496,7 @@ const MatchRenderer = {
         MatchEventBus.on('infoUpdated', (data) => {
             try {
                 Logger.time("renderMatchInfo");
-                this.renderMatchInfo(data);
+                MatchRenderer.renderMatchInfo(data);
                 Logger.timeEnd("renderMatchInfo");
             } catch(e) {
                 Logger.error("renderMatchInfo Error", e);
@@ -505,7 +505,7 @@ const MatchRenderer = {
         MatchEventBus.on('lineupsUpdated', (data) => {
             try {
                 Logger.time("renderLineups");
-                this.renderLineups(data);
+                MatchRenderer.renderLineups(data);
                 Logger.timeEnd("renderLineups");
             } catch(e) {
                 Logger.error("renderLineups Error", e);
@@ -514,7 +514,7 @@ const MatchRenderer = {
         MatchEventBus.on('statisticsUpdated', (data) => {
             try {
                 Logger.time("renderMatchStats");
-                this.renderMatchStats(data);
+                MatchRenderer.renderMatchStats(data);
                 Logger.timeEnd("renderMatchStats");
             } catch(e) {
                 Logger.error("renderMatchStats Error", e);
@@ -523,7 +523,7 @@ const MatchRenderer = {
         MatchEventBus.on('recentFormUpdated', (data) => {
             try {
                 Logger.time("renderMatchRecentForm");
-                this.renderMatchRecentForm(data);
+                MatchRenderer.renderMatchRecentForm(data);
                 Logger.timeEnd("renderMatchRecentForm");
             } catch(e) {
                 Logger.error("renderMatchRecentForm Error", e);
@@ -531,20 +531,20 @@ const MatchRenderer = {
         });
 
         MatchEventBus.on('gameError', () => {
-            this.renderHeroError();
-            this.renderLiveScoreError();
-            this.renderMatchInfoError();
-            this.renderLineupsError();
-            this.renderMatchStatsError();
-            this.renderMatchRecentFormError();
+            MatchRenderer.renderHeroError();
+            MatchRenderer.renderLiveScoreError();
+            MatchRenderer.renderMatchInfoError();
+            MatchRenderer.renderLineupsError();
+            MatchRenderer.renderMatchStatsError();
+            MatchRenderer.renderMatchRecentFormError();
         });
 
         MatchEventBus.on('lazyLoad_os-match-timeline', () => {
-            this.initMatchTimeline();
+            MatchRenderer.initMatchTimeline();
             if (MatchStore.game) {
                 try {
                     Logger.time("renderMatchTimeline");
-                    this.renderMatchTimeline(MatchStore.game);
+                    MatchRenderer.renderMatchTimeline(MatchStore.game);
                     Logger.timeEnd("renderMatchTimeline");
                 } catch(e) {
                     Logger.error("Timeline render error", e);
@@ -553,7 +553,7 @@ const MatchRenderer = {
             MatchEventBus.on('timelineUpdated', (data) => {
                 try {
                     Logger.time("renderMatchTimeline");
-                    this.renderMatchTimeline(data);
+                    MatchRenderer.renderMatchTimeline(data);
                     Logger.timeEnd("renderMatchTimeline");
                 } catch(e) {
                     Logger.error("Timeline error", e);
@@ -562,11 +562,11 @@ const MatchRenderer = {
         });
 
         MatchEventBus.on('lazyLoad_os-group-standings', () => {
-            this.initMatchStandings();
+            MatchRenderer.initMatchStandings();
             if (MatchStore.standings) {
                 try {
                     Logger.time("renderMatchStandings");
-                    this.renderMatchStandings(MatchStore.standings);
+                    MatchRenderer.renderMatchStandings(MatchStore.standings);
                     Logger.timeEnd("renderMatchStandings");
                 } catch(e) {
                     Logger.error("Standings render error", e);
@@ -575,21 +575,21 @@ const MatchRenderer = {
             MatchEventBus.on('standingsUpdated', (data) => {
                 try {
                     Logger.time("renderMatchStandings");
-                    this.renderMatchStandings(data);
+                    MatchRenderer.renderMatchStandings(data);
                     Logger.timeEnd("renderMatchStandings");
                 } catch(e) {
                     Logger.error("Standings error", e);
                 }
             });
-            MatchEventBus.on('standingsError', () => this.renderMatchStandingsError());
+            MatchEventBus.on('standingsError', () => MatchRenderer.renderMatchStandingsError());
         });
 
         MatchEventBus.on('lazyLoad_os-match-h2h', () => {
-            this.initMatchH2H();
+            MatchRenderer.initMatchH2H();
             if (MatchStore.h2h) {
                 try {
                     Logger.time("renderMatchH2H");
-                    this.renderMatchH2H(MatchStore.h2h);
+                    MatchRenderer.renderMatchH2H(MatchStore.h2h);
                     Logger.timeEnd("renderMatchH2H");
                 } catch(e) {
                     Logger.error("H2H render error", e);
@@ -598,21 +598,21 @@ const MatchRenderer = {
             MatchEventBus.on('h2hUpdated', (data) => {
                 try {
                     Logger.time("renderMatchH2H");
-                    this.renderMatchH2H(data);
+                    MatchRenderer.renderMatchH2H(data);
                     Logger.timeEnd("renderMatchH2H");
                 } catch(e) {
                     Logger.error("H2H error", e);
                 }
             });
-            MatchEventBus.on('h2hError', () => this.renderMatchH2HError());
+            MatchEventBus.on('h2hError', () => MatchRenderer.renderMatchH2HError());
         });
 
         MatchEventBus.on('lazyLoad_os-related-matches', () => {
-            this.initRelatedMatches();
+            MatchRenderer.initRelatedMatches();
             if (MatchStore.relatedMatches) {
                 try {
                     Logger.time("renderRelatedMatches");
-                    this.renderRelatedMatches(MatchStore.relatedMatches);
+                    MatchRenderer.renderRelatedMatches(MatchStore.relatedMatches);
                     Logger.timeEnd("renderRelatedMatches");
                 } catch(e) {
                     Logger.error("Related matches render error", e);
@@ -621,7 +621,7 @@ const MatchRenderer = {
             MatchEventBus.on('relatedMatchesUpdated', (data) => {
                 try {
                     Logger.time("renderRelatedMatches");
-                    this.renderRelatedMatches(data);
+                    MatchRenderer.renderRelatedMatches(data);
                     Logger.timeEnd("renderRelatedMatches");
                 } catch(e) {
                     Logger.error("Related error", e);
