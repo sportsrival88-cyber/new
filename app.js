@@ -1011,6 +1011,9 @@ class Application {
     init() {
         if (this.initialized) return;
         
+        OneSportsApp.page = document.getElementById("onesports-page");
+        console.log("Page:", OneSportsApp.page);
+        
         try {
             // Apply global configurations if available from the XML <head>
             const config = window.OneSports || {};
