@@ -984,41 +984,8 @@ const StageManager = {
 
 /**
  * 10. ROUTER
- * Parses the DOM to detect the active stage and triggers the Stage Manager.
+ * (Router logic has been migrated to the top of the file)
  */
-// const Router = {
-    init() {
-        Logger.info("Router initialized.");
-        const rootElement = document.getElementById("onesports-page");
-        
-        if (!rootElement) {
-            Logger.info("No #onesports-page found. Running framework in generic mode.");
-            return;
-        }
-
-        // Read routing data attributes
-        const stage = rootElement.dataset.stage;
-        const fixtureId = rootElement.dataset.fixture || rootElement.dataset.id;
-        const streamId = rootElement.dataset.stream;
-        const playerId = rootElement.dataset.player;
-
-        // Route to the appropriate Stage
-        switch(stage) {
-            case "match":
-                StageManager.loadMatchStage(fixtureId);
-                break;
-            case "stream":
-                StageManager.loadStreamStage(streamId, fixtureId);
-                break;
-            case "player":
-                StageManager.loadPlayerStage(playerId);
-                break;
-            default:
-                Logger.warn(`Unknown stage type detected: ${stage}`);
-                break;
-        }
-    }
-};
 
 /**
  * 11. APPLICATION
