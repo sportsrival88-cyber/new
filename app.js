@@ -77,12 +77,28 @@ const TimelineRenderer = {
 
 };
 
+const StatisticsRenderer = {
+
+    render() {
+
+        OneSportsApp.shell.statistics.innerHTML = `
+            <div class="glass-card" style="padding:30px;text-align:center;">
+                <h2>Statistics Renderer</h2>
+                <p>Statistics component is working.</p>
+            </div>
+        `;
+
+    }
+
+};
+
 const MatchRenderer = {
 
     render() {
         console.log("Rendering Match Page");
         HeroRenderer.render();
         TimelineRenderer.render();
+        StatisticsRenderer.render();
     }
 
 };
