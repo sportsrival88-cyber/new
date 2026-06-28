@@ -62,11 +62,27 @@ const HeroRenderer = {
     }
 };
 
+const TimelineRenderer = {
+
+    render() {
+
+        OneSportsApp.shell.timeline.innerHTML = `
+            <div class="glass-card" style="padding:30px;text-align:center;">
+                <h2>Timeline Renderer</h2>
+                <p>Timeline component is working.</p>
+            </div>
+        `;
+
+    }
+
+};
+
 const MatchRenderer = {
 
     render() {
         console.log("Rendering Match Page");
         HeroRenderer.render();
+        TimelineRenderer.render();
     }
 
 };
