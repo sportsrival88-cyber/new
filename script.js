@@ -797,7 +797,7 @@ const PageManager = {
         if (document.getElementById('matches-container')) {
             return 'homepage';
         }
-        // Blogger dynamically adds 'post' or we have our custom 'blog-content'
+        // Blogger dynamically adds 'post' class or we have our custom 'blog-content'
         if (document.querySelector('.post') || document.getElementById('blog-content') || document.getElementById('comments')) {
             return 'article';
         }
@@ -817,7 +817,7 @@ const PageManager = {
         }
 
         const pageType = this.detectPageType();
-        console.log(PageManager: Detected [\$pageType\] page.);
+        console.log(`PageManager: Detected [${pageType}] page.`);
 
         switch(pageType) {
             case 'homepage':
