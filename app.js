@@ -91,12 +91,22 @@ const HeroRenderer = {
         BaseRenderer.render(
             OneSportsApp.shell.hero,
             `
-            <div class="glass-card" style="padding:40px;text-align:center;">
-                <h1>${HeroModel.homeTeam} ${HeroModel.homeScore} - ${HeroModel.awayScore} ${HeroModel.awayTeam}</h1>
-                <p><strong>Competition:</strong> ${HeroModel.competition} | <strong>Stage:</strong> ${HeroModel.stage}</p>
-                <p><strong>Status:</strong> ${HeroModel.status} | <strong>Kickoff:</strong> ${HeroModel.kickoff} ${HeroModel.timezone}</p>
-                <p><strong>Venue:</strong> ${HeroModel.stadium}, ${HeroModel.city}</p>
-                <p><strong>Referee:</strong> ${HeroModel.referee} | <strong>Attendance:</strong> ${HeroModel.attendance} | <strong>Weather:</strong> ${HeroModel.weather}</p>
+            <div class="glass-card" style="padding:40px">
+
+                <h3>${HeroModel.competition}</h3>
+
+                <p>${HeroModel.stage}</p>
+
+                <h1>${HeroModel.homeTeam} vs ${HeroModel.awayTeam}</h1>
+
+                <p>${HeroModel.stadium}</p>
+
+                <p>${HeroModel.city}</p>
+
+                <p>${HeroModel.kickoff}</p>
+
+                <p>${HeroModel.status}</p>
+
             </div>
             `
         );
@@ -184,22 +194,22 @@ const MatchRenderer = {
         console.log("Rendering Match Page");
         
         Object.assign(HeroModel, {
-            competition: "FIFA World Cup",
-            stage: "Quarter-Final",
-            stadium: "Education City Stadium",
-            city: "Al Rayyan",
-            referee: "Michael Oliver",
-            attendance: "43893",
-            weather: "Clear, 24°C",
-            kickoff: "15:00",
-            timezone: "UTC",
-            status: "In Progress",
+            competition: "FIFA World Cup 2026",
+            stage: "Round of 32",
+            stadium: "MetLife Stadium",
+            city: "East Rutherford, New Jersey",
+            referee: "TBD",
+            attendance: "82,500",
+            weather: "22°C",
+            kickoff: "20:00",
+            timezone: "UTC-5",
+            status: "Upcoming",
             homeTeam: "Croatia",
             awayTeam: "Brazil",
             homeLogo: "",
             awayLogo: "",
-            homeScore: 1,
-            awayScore: 1,
+            homeScore: 0,
+            awayScore: 0,
             background: ""
         });
 
