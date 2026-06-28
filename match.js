@@ -462,7 +462,7 @@ const MatchRenderer = {
     
     cacheDOM() {
         const ids = [
-            'os-hero-banner', 'os-live-score', 'os-live-commentary', 'os-match-info',
+            'os-match-photo', 'os-hero-banner', 'os-live-score', 'os-live-commentary', 'os-match-info',
             'os-team-cards', 'os-match-lineups', 'os-match-formations', 'os-player-ratings', 'os-match-timeline', 
             'os-match-highlights', 'os-match-events', 'os-match-stats', 'os-broadcast-link', 'os-match-h2h', 
             'os-recent-form', 'os-match-injuries', 'os-social-feed',
@@ -845,7 +845,7 @@ const MatchRenderer = {
                     <i class="fas fa-spinner fa-spin"></i> Loading...
                 </div>
             `;
-            const url = `https://webws.365scores.com/web/game/previousmeetings/?appTypeId=5&langId=1&timezoneName=Asia%2FCalcutta&userCountryId=80&gameId=\${MatchStore.metadata.matchId}`;
+            const url = `https://webws.365scores.com/web/game/previousmeetings/?appTypeId=5&langId=1&timezoneName=Asia%2FCalcutta&userCountryId=80&gameId=${MatchStore.metadata.matchId}`;
             API.fetchJSON(url).then(fetched => {
                 if (fetched && fetched.previousMeetings) {
                     this.buildH2HContent(container, game, fetched.previousMeetings, data.competitions);
@@ -946,14 +946,14 @@ const MatchRenderer = {
             recentHtml += `
                 <div class="os-h2h-recent-row">
                     <div class="os-h2h-recent-meta">
-                        <span class="os-h2h-comp">\${compName}</span>
-                        <span class="os-h2h-date">\${dateStr}</span>
-                        <span class="os-h2h-status">\${statusStr}</span>
+                        <span class="os-h2h-comp">${compName}</span>
+                        <span class="os-h2h-date">${dateStr}</span>
+                        <span class="os-h2h-status">${statusStr}</span>
                     </div>
                     <div class="os-h2h-recent-teams">
-                        <div class="os-h2h-team home \${hWinnerClass}">\${hName}</div>
-                        <div class="os-h2h-score">\${hScore} - \${aScore}</div>
-                        <div class="os-h2h-team away \${aWinnerClass}">\${aName}</div>
+                        <div class="os-h2h-team home ${hWinnerClass}">${hName}</div>
+                        <div class="os-h2h-score">${hScore} - ${aScore}</div>
+                        <div class="os-h2h-team away ${aWinnerClass}">${aName}</div>
                     </div>
                 </div>
             `;
@@ -972,7 +972,7 @@ const MatchRenderer = {
                 
                 <div class="os-h2h-summary">
                     <div class="os-h2h-total-badge">
-                        <span class="os-h2h-total-num">\${totalMatches}</span>
+                        <span class="os-h2h-total-num">${totalMatches}</span>
                         <span class="os-h2h-total-lbl">Matches</span>
                     </div>
                 </div>
@@ -980,28 +980,28 @@ const MatchRenderer = {
                 <div class="os-h2h-comparison">
                     <div class="os-h2h-comp-labels">
                         <div class="os-h2h-comp-lbl">
-                            <span class="os-h2h-comp-name">\${homeName}</span>
-                            <span class="os-h2h-comp-val">\${homeWins}</span>
+                            <span class="os-h2h-comp-name">${homeName}</span>
+                            <span class="os-h2h-comp-val">${homeWins}</span>
                         </div>
                         <div class="os-h2h-comp-lbl center">
                             <span class="os-h2h-comp-name">Draws</span>
-                            <span class="os-h2h-comp-val">\${draws}</span>
+                            <span class="os-h2h-comp-val">${draws}</span>
                         </div>
                         <div class="os-h2h-comp-lbl right">
-                            <span class="os-h2h-comp-name">\${awayName}</span>
-                            <span class="os-h2h-comp-val">\${awayWins}</span>
+                            <span class="os-h2h-comp-name">${awayName}</span>
+                            <span class="os-h2h-comp-val">${awayWins}</span>
                         </div>
                     </div>
                     <div class="os-h2h-comp-bar">
-                        <div class="os-h2h-bar-segment home" style="width: \${homePct}%"></div>
-                        <div class="os-h2h-bar-segment draw" style="width: \${drawPct}%"></div>
-                        <div class="os-h2h-bar-segment away" style="width: \${awayPct}%"></div>
+                        <div class="os-h2h-bar-segment home" style="width: ${homePct}%"></div>
+                        <div class="os-h2h-bar-segment draw" style="width: ${drawPct}%"></div>
+                        <div class="os-h2h-bar-segment away" style="width: ${awayPct}%"></div>
                     </div>
                 </div>
 
                 <div class="os-h2h-recent-title">Recent Meetings</div>
                 <div class="os-h2h-recent-list">
-                    \${recentHtml}
+                    ${recentHtml}
                 </div>
             </div>
         `;
@@ -1043,95 +1043,95 @@ const MatchRenderer = {
                 <div class="os-rf-panels">
                     <div class="os-rf-panel home-panel">
                         <div class="os-rf-panel-header">
-                            <img src="\${Helpers.getLogoUrl(hc.id, hc.imageVersion)}" alt="\${hc.name}" class="os-rf-logo" width="40" height="40" loading="lazy" decoding="async">
-                            <span class="os-rf-team-name">\${hc.name}</span>
+                            <img src="${Helpers.getLogoUrl(hc.id, hc.imageVersion)}" alt="${hc.name}" class="os-rf-logo" width="40" height="40" loading="lazy" decoding="async">
+                            <span class="os-rf-team-name">${hc.name}</span>
                         </div>
-                        <div class="os-rf-rating \${homeData.ratingClass}">\${homeData.ratingStr} Form</div>
+                        <div class="os-rf-rating ${homeData.ratingClass}">${homeData.ratingStr} Form</div>
                         
                         <div class="os-rf-form-badges">
-                            \${homeData.badgesHtml}
+                            ${homeData.badgesHtml}
                         </div>
                         
                         <div class="os-rf-summary-grid">
                             <div class="os-rf-sum-item">
-                                <span class="os-rf-sum-val">\${homeData.w}</span>
+                                <span class="os-rf-sum-val">${homeData.w}</span>
                                 <span class="os-rf-sum-lbl">Wins</span>
                             </div>
                             <div class="os-rf-sum-item">
-                                <span class="os-rf-sum-val">\${homeData.d}</span>
+                                <span class="os-rf-sum-val">${homeData.d}</span>
                                 <span class="os-rf-sum-lbl">Draws</span>
                             </div>
                             <div class="os-rf-sum-item">
-                                <span class="os-rf-sum-val">\${homeData.l}</span>
+                                <span class="os-rf-sum-val">${homeData.l}</span>
                                 <span class="os-rf-sum-lbl">Losses</span>
                             </div>
                             <div class="os-rf-sum-item">
-                                <span class="os-rf-sum-val">\${homeData.gf}</span>
+                                <span class="os-rf-sum-val">${homeData.gf}</span>
                                 <span class="os-rf-sum-lbl">Goals For</span>
                             </div>
                             <div class="os-rf-sum-item">
-                                <span class="os-rf-sum-val">\${homeData.ga}</span>
+                                <span class="os-rf-sum-val">${homeData.ga}</span>
                                 <span class="os-rf-sum-lbl">Goals Agst</span>
                             </div>
                             <div class="os-rf-sum-item">
-                                <span class="os-rf-sum-val">\${homeData.cs}</span>
+                                <span class="os-rf-sum-val">${homeData.cs}</span>
                                 <span class="os-rf-sum-lbl">Clean Sheets</span>
                             </div>
                             <div class="os-rf-sum-item full-width">
-                                <span class="os-rf-sum-val">\${homeData.avgGoals}</span>
+                                <span class="os-rf-sum-val">${homeData.avgGoals}</span>
                                 <span class="os-rf-sum-lbl">Avg Goals/Match</span>
                             </div>
                         </div>
 
                         <div class="os-rf-matches-list">
-                            \${homeData.matchesHtml}
+                            ${homeData.matchesHtml}
                         </div>
                     </div>
                     
                     <div class="os-rf-panel away-panel">
                         <div class="os-rf-panel-header">
-                            <img src="\${Helpers.getLogoUrl(ac.id, ac.imageVersion)}" alt="\${ac.name}" class="os-rf-logo" width="40" height="40" loading="lazy" decoding="async">
-                            <span class="os-rf-team-name">\${ac.name}</span>
+                            <img src="${Helpers.getLogoUrl(ac.id, ac.imageVersion)}" alt="${ac.name}" class="os-rf-logo" width="40" height="40" loading="lazy" decoding="async">
+                            <span class="os-rf-team-name">${ac.name}</span>
                         </div>
-                        <div class="os-rf-rating \${awayData.ratingClass}">\${awayData.ratingStr} Form</div>
+                        <div class="os-rf-rating ${awayData.ratingClass}">${awayData.ratingStr} Form</div>
                         
                         <div class="os-rf-form-badges">
-                            \${awayData.badgesHtml}
+                            ${awayData.badgesHtml}
                         </div>
                         
                         <div class="os-rf-summary-grid">
                             <div class="os-rf-sum-item">
-                                <span class="os-rf-sum-val">\${awayData.w}</span>
+                                <span class="os-rf-sum-val">${awayData.w}</span>
                                 <span class="os-rf-sum-lbl">Wins</span>
                             </div>
                             <div class="os-rf-sum-item">
-                                <span class="os-rf-sum-val">\${awayData.d}</span>
+                                <span class="os-rf-sum-val">${awayData.d}</span>
                                 <span class="os-rf-sum-lbl">Draws</span>
                             </div>
                             <div class="os-rf-sum-item">
-                                <span class="os-rf-sum-val">\${awayData.l}</span>
+                                <span class="os-rf-sum-val">${awayData.l}</span>
                                 <span class="os-rf-sum-lbl">Losses</span>
                             </div>
                             <div class="os-rf-sum-item">
-                                <span class="os-rf-sum-val">\${awayData.gf}</span>
+                                <span class="os-rf-sum-val">${awayData.gf}</span>
                                 <span class="os-rf-sum-lbl">Goals For</span>
                             </div>
                             <div class="os-rf-sum-item">
-                                <span class="os-rf-sum-val">\${awayData.ga}</span>
+                                <span class="os-rf-sum-val">${awayData.ga}</span>
                                 <span class="os-rf-sum-lbl">Goals Agst</span>
                             </div>
                             <div class="os-rf-sum-item">
-                                <span class="os-rf-sum-val">\${awayData.cs}</span>
+                                <span class="os-rf-sum-val">${awayData.cs}</span>
                                 <span class="os-rf-sum-lbl">Clean Sheets</span>
                             </div>
                             <div class="os-rf-sum-item full-width">
-                                <span class="os-rf-sum-val">\${awayData.avgGoals}</span>
+                                <span class="os-rf-sum-val">${awayData.avgGoals}</span>
                                 <span class="os-rf-sum-lbl">Avg Goals/Match</span>
                             </div>
                         </div>
 
                         <div class="os-rf-matches-list">
-                            \${awayData.matchesHtml}
+                            ${awayData.matchesHtml}
                         </div>
                     </div>
                 </div>
@@ -1184,7 +1184,7 @@ const MatchRenderer = {
                 }
             }
             
-            badgesHtml += `<span class="os-rf-badge \${badgeClass}">\${resultChar}</span>`;
+            badgesHtml += `<span class="os-rf-badge ${badgeClass}">${resultChar}</span>`;
             
             let compName = "";
             if (match.competitionId && competitions) {
@@ -1196,17 +1196,17 @@ const MatchRenderer = {
             const dateStr = match.startTime ? Helpers.formatDate(match.startTime) : "";
             const oppName = oppComp.name;
             const homeAwayIndicator = isHome ? "(H)" : "(A)";
-            const finalScore = mainScore !== -1 ? (isHome ? `\${mainScore} - \${oppScore}` : `\${oppScore} - \${mainScore}`) : "v";
+            const finalScore = mainScore !== -1 ? (isHome ? `${mainScore} - ${oppScore}` : `${oppScore} - ${mainScore}`) : "v";
             
             matchesHtml += `
                 <div class="os-rf-match-row">
                     <div class="os-rf-match-meta">
-                        <span class="os-rf-comp">\${compName}</span>
-                        <span class="os-rf-date">\${dateStr}</span>
+                        <span class="os-rf-comp">${compName}</span>
+                        <span class="os-rf-date">${dateStr}</span>
                     </div>
                     <div class="os-rf-match-main">
-                        <div class="os-rf-opp">\${oppName} <span class="os-rf-ha">\${homeAwayIndicator}</span></div>
-                        <div class="os-rf-mscore \${badgeClass}">\${finalScore}</div>
+                        <div class="os-rf-opp">${oppName} <span class="os-rf-ha">${homeAwayIndicator}</span></div>
+                        <div class="os-rf-mscore ${badgeClass}">${finalScore}</div>
                     </div>
                 </div>
             `;
@@ -1312,7 +1312,7 @@ const MatchRenderer = {
                 const isHighlight = (comp.id === homeId || comp.id === awayId) ? 'highlight' : '';
                 
                 const borderStyle = row.destinationNum && destColors[row.destinationNum] 
-                    ? `border-left: 4px solid \${destColors[row.destinationNum]};` 
+                    ? `border-left: 4px solid ${destColors[row.destinationNum]};` 
                     : 'border-left: 4px solid transparent;';
 
                 let formHtml = '';
@@ -1322,25 +1322,25 @@ const MatchRenderer = {
                         let fChar = 'L';
                         if (f === 1) { fClass = 'win'; fChar = 'W'; }
                         else if (f === 2) { fClass = 'draw'; fChar = 'D'; }
-                        formHtml += `<span class="os-st-form-badge \${fClass}">\${fChar}</span>`;
+                        formHtml += `<span class="os-st-form-badge ${fClass}">${fChar}</span>`;
                     });
                 }
 
                 rowsHtml += `
-                    <div class="os-st-row \${isHighlight}" id="os-st-row-\${comp.id}" style="\${borderStyle}" data-pos="\${row.position}">
-                        <div class="os-st-col pos" data-field="pos">\${row.position}</div>
+                    <div class="os-st-row ${isHighlight}" id="os-st-row-${comp.id}" style="${borderStyle}" data-pos="${row.position}">
+                        <div class="os-st-col pos" data-field="pos">${row.position}</div>
                         <div class="os-st-col team">
-                            <img src="\${Helpers.getLogoUrl(comp.id, comp.imageVersion)}" alt="\${comp.name}" class="os-st-logo" width="24" height="24" loading="lazy" decoding="async">
-                            <span class="os-st-team-name">\${comp.name}</span>
+                            <img src="${Helpers.getLogoUrl(comp.id, comp.imageVersion)}" alt="${comp.name}" class="os-st-logo" width="24" height="24" loading="lazy" decoding="async">
+                            <span class="os-st-team-name">${comp.name}</span>
                         </div>
-                        <div class="os-st-col" data-field="played">\${row.gamePlayed}</div>
-                        <div class="os-st-col hide-mobile" data-field="won">\${row.gamesWon}</div>
-                        <div class="os-st-col hide-mobile" data-field="drawn">\${row.gamesEven}</div>
-                        <div class="os-st-col hide-mobile" data-field="lost">\${row.gamesLost}</div>
-                        <div class="os-st-col hide-mobile" data-field="goals">\${row.for}:\${row.against}</div>
-                        <div class="os-st-col" data-field="gd">\${row.ratio > 0 ? '+' : ''}\${row.ratio}</div>
-                        <div class="os-st-col pts" data-field="pts">\${row.points}</div>
-                        <div class="os-st-col form hide-mobile">\${formHtml}</div>
+                        <div class="os-st-col" data-field="played">${row.gamePlayed}</div>
+                        <div class="os-st-col hide-mobile" data-field="won">${row.gamesWon}</div>
+                        <div class="os-st-col hide-mobile" data-field="drawn">${row.gamesEven}</div>
+                        <div class="os-st-col hide-mobile" data-field="lost">${row.gamesLost}</div>
+                        <div class="os-st-col hide-mobile" data-field="goals">${row.for}:${row.against}</div>
+                        <div class="os-st-col" data-field="gd">${row.ratio > 0 ? '+' : ''}${row.ratio}</div>
+                        <div class="os-st-col pts" data-field="pts">${row.points}</div>
+                        <div class="os-st-col form hide-mobile">${formHtml}</div>
                     </div>
                 `;
             });
@@ -1360,7 +1360,7 @@ const MatchRenderer = {
                         <div class="os-st-col form hide-mobile">Form</div>
                     </div>
                     <div class="os-st-body" id="os-st-body">
-                        \${rowsHtml}
+                        ${rowsHtml}
                     </div>
                 </div>
             `;
@@ -1369,10 +1369,10 @@ const MatchRenderer = {
             
             standingsObj.rows.forEach(row => {
                 const comp = row.competitor;
-                const rowEl = document.getElementById(`os-st-row-\${comp.id}`);
+                const rowEl = document.getElementById(`os-st-row-${comp.id}`);
                 if (rowEl) {
                     const updateField = (field, val) => {
-                        const el = rowEl.querySelector(`[data-field="\${field}"]`);
+                        const el = rowEl.querySelector(`[data-field="${field}"]`);
                         if (el && el.innerText != val) {
                             el.innerText = val;
                             el.classList.remove('os-st-flash');
@@ -1386,7 +1386,7 @@ const MatchRenderer = {
                     updateField('won', row.gamesWon);
                     updateField('drawn', row.gamesEven);
                     updateField('lost', row.gamesLost);
-                    updateField('goals', `\${row.for}:\${row.against}`);
+                    updateField('goals', `${row.for}:${row.against}`);
                     updateField('gd', row.ratio > 0 ? '+' + row.ratio : row.ratio);
                     updateField('pts', row.points);
 
@@ -1598,7 +1598,7 @@ const MatchRenderer = {
         }
         
         this.supportedStats.forEach((statName, index) => {
-            const row = container.querySelector(`.os-stat-row[data-stat-id="\${index}"]`);
+            const row = container.querySelector(`.os-stat-row[data-stat-id="${index}"]`);
             if (!row) return;
 
             const lookupName = statName.toLowerCase();
@@ -1643,8 +1643,8 @@ const MatchRenderer = {
                 if (hNum > aNum) hValEl.classList.add('os-stat-winner');
                 if (aNum > hNum) aValEl.classList.add('os-stat-winner');
 
-                hBarEl.style.width = `\${hPct}%`;
-                aBarEl.style.width = `\${aPct}%`;
+                hBarEl.style.width = `${hPct}%`;
+                aBarEl.style.width = `${aPct}%`;
 
                 this.animateNumber(hValEl, hValStr, 500);
                 this.animateNumber(aValEl, aValStr, 500);
@@ -1959,6 +1959,19 @@ const MatchRenderer = {
         `;
     },
 
+    renderMatchPhoto() {
+        const container = this.elements['os-match-photo'];
+        if (!container) return;
+        
+        const photoUrl = MatchStore.metadata.matchPhoto;
+        if (photoUrl && photoUrl.trim() !== '') {
+            container.innerHTML = `<img src="${Security.escapeHTML(photoUrl)}" class="os-match-photo-img" alt="Match Poster" decoding="async" fetchpriority="high">`;
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    },
+
     renderBroadcastLink() {
         const container = this.elements['os-broadcast-link'];
         if (!container) return;
@@ -2259,7 +2272,8 @@ const MatchArticleController = {
                 telegram: payloadContainer.getAttribute('data-telegram'),
                 whatsapp: payloadContainer.getAttribute('data-whatsapp')
             },
-            broadcastUrl: payloadContainer.getAttribute('data-broadcast-url')
+            broadcastUrl: payloadContainer.getAttribute('data-broadcast-url'),
+            matchPhoto: payloadContainer.getAttribute('data-match-photo')
         };
         MatchStore.updateMetadata(md);
 
@@ -2269,6 +2283,7 @@ const MatchArticleController = {
         MatchAdController.initListeners();
 
         // Render synchronous UI elements immediately
+        MatchRenderer.renderMatchPhoto();
         MatchRenderer.renderBroadcastLink();
         MatchRenderer.renderSocialFeed();
 
