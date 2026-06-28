@@ -92,9 +92,11 @@ const HeroRenderer = {
             OneSportsApp.shell.hero,
             `
             <div class="glass-card" style="padding:40px;text-align:center;">
-                <h1>${HeroModel.homeTeam} vs ${HeroModel.awayTeam}</h1>
-                <p>${HeroModel.competition}</p>
-                <p>Status: ${HeroModel.status}</p>
+                <h1>${HeroModel.homeTeam} ${HeroModel.homeScore} - ${HeroModel.awayScore} ${HeroModel.awayTeam}</h1>
+                <p><strong>Competition:</strong> ${HeroModel.competition} | <strong>Stage:</strong> ${HeroModel.stage}</p>
+                <p><strong>Status:</strong> ${HeroModel.status} | <strong>Kickoff:</strong> ${HeroModel.kickoff} ${HeroModel.timezone}</p>
+                <p><strong>Venue:</strong> ${HeroModel.stadium}, ${HeroModel.city}</p>
+                <p><strong>Referee:</strong> ${HeroModel.referee} | <strong>Attendance:</strong> ${HeroModel.attendance} | <strong>Weather:</strong> ${HeroModel.weather}</p>
             </div>
             `
         );
