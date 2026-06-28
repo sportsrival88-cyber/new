@@ -92,6 +92,21 @@ const StatisticsRenderer = {
 
 };
 
+const StandingsRenderer = {
+
+    render() {
+
+        OneSportsApp.shell.standings.innerHTML = `
+            <div class="glass-card" style="padding:30px;text-align:center;">
+                <h2>Standings Renderer</h2>
+                <p>Standings component is working.</p>
+            </div>
+        `;
+
+    }
+
+};
+
 const MatchRenderer = {
 
     render() {
@@ -99,6 +114,7 @@ const MatchRenderer = {
         HeroRenderer.render();
         TimelineRenderer.render();
         StatisticsRenderer.render();
+        StandingsRenderer.render();
     }
 
 };
