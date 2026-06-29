@@ -539,9 +539,25 @@ const OneSportsMatch = (() => {
                 const isLightMode = document.body.classList.contains('light-mode');
                 const themeParam = isLightMode ? 'light' : 'dark';
                 
-                wrapper.innerHTML = `
-                    <style>#powered-by { display: none !important; }</style>
-                    <div style="background: transparent; border-radius: 8px; font-size: 16px; line-height: 1.8; overflow: hidden; min-height: 250px;">
+                const iframe = document.createElement('iframe');
+                iframe.className = 'os-widget-iframe fade-in';
+                iframe.title = "Live Match Center";
+                iframe.setAttribute('allowtransparency', 'true');
+                iframe.style.cssText = "width: 100%; height: 260px; border: none; overflow: hidden; border-radius: 8px; display: block; opacity: 0; transition: opacity 0.5s ease;";
+
+                // Encapsulate the widget inside an iframe to prevent its global CSS from leaking and breaking the site's layout.
+                const html = `
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <style>
+                            body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+                            #powered-by { display: none !important; }
+                        </style>
+                    </head>
+                    <body>
                         <div data-allow-premium-data="true" 
                              data-entity-id="${entityId}" 
                              data-lang="en-US" 
@@ -550,50 +566,32 @@ const OneSportsMatch = (() => {
                              data-widget-id="0.fwq61qa3fvf" 
                              data-widget-type="game">
                         </div>
-                    </div>
+                        <scr` + `ipt src="https://widgets.365scores.com/main.js"></scr` + `ipt>
+                    </body>
+                    </html>
                 `;
 
-                const domain = "https://widgets.365scores.com/";
-                
-                const fontElement = document.createElement('link');
-                fontElement.setAttribute('rel', "stylesheet");
-                fontElement.setAttribute('href', 'https://fonts.googleapis.com/css?family=Roboto:300,400,500');
-                document.head.appendChild(fontElement);
+                iframe.srcdoc = html;
 
-                const linkElement = document.createElement('link');
-                linkElement.setAttribute('rel', 'stylesheet');
-                linkElement.setAttribute('href', domain + 'fonts.css');
-                document.head.appendChild(linkElement);
+                let hasLoaded = false;
+                iframe.onload = () => {
+                    if (hasLoaded) return;
+                    hasLoaded = true;
+                    const skeleton = wrapper.querySelector('.os-widget-skeleton');
+                    if (skeleton) skeleton.style.display = 'none';
+                    iframe.style.opacity = '1';
+                    window.OneSports.log('365Scores Widget encapsulated successfully.');
+                };
 
-                fetch(domain + 'asset-manifest.json')
-                    .then(res => res.json())
-                    .then(assets => {
-                        const jsFiles = assets.entrypoints.filter(asset => asset.includes('static/js'));
-                        const cssFiles = assets.entrypoints.filter(asset => asset.includes('static/css'));
-
-                        if (cssFiles && cssFiles.length > 0) {
-                            cssFiles.forEach(src => {
-                                const element = document.createElement('link');
-                                element.setAttribute('href', domain + src);
-                                element.setAttribute('rel', 'stylesheet');
-                                document.head.appendChild(element);
-                            });
-                        }
-
-                        if (jsFiles && jsFiles.length > 0) {
-                            jsFiles.forEach(src => {
-                                const element = document.createElement('script');
-                                element.setAttribute('src', domain + src);
-                                document.head.appendChild(element);
-                            });
-                        }
-                        
-                        window.OneSports.log('365Scores React Widget injected successfully.');
-                    })
-                    .catch(err => {
-                        window.OneSports.log('Failed to fetch 365scores asset manifest', err, true);
+                // Fallback timeout in case iframe fails silently
+                setTimeout(() => {
+                    if (!hasLoaded) {
+                        hasLoaded = true;
                         Modules.Widgets.renderError(wrapper);
-                    });
+                    }
+                }, 12000);
+
+                wrapper.appendChild(iframe);
             },
 
             renderError: (wrapper) => {
