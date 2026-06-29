@@ -209,15 +209,21 @@ body.light-mode .os-mi-detail-item {
 /* ==========================================
    3. COMMUNITY BUTTONS
    ========================================== */
-.os-post-buttons {
+.community-join-section {
     display: flex;
     gap: 15px;
+    margin-top: 25px;
     margin-bottom: 30px;
     width: 100%;
 }
 
+.community-btn { flex: 1; padding: 12px !important; border-radius: 8px !important; text-align: center !important; text-decoration: none !important; font-weight: 600 !important; color: #ffffff !important; font-size: 0.9rem !important; transition: transform 0.2s, box-shadow 0.2s; border: none !important; outline: none !important; }
+.community-btn:hover { transform: translateY(-2px); box-shadow: var(--glass-shadow); color: #ffffff !important; }
+.telegram-btn { background: linear-gradient(135deg, #0088cc, #00aaff) !important; }
+.whatsapp-btn { background: linear-gradient(135deg, #25D366, #128C7E) !important; }
+
 @media (max-width: 768px) {
-    .os-post-buttons {
+    .community-join-section {
         flex-direction: column;
     }
 }

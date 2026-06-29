@@ -426,11 +426,21 @@ const OneSportsMatch = (() => {
                 const { telegram, whatsapp } = MATCH_CONFIG;
                 if (!telegram && !whatsapp) return;
 
-                let html = '<div class="community-join-section" style="display: flex; gap: 15px; margin-top: 25px; margin-bottom: 30px; width: 100%;">';
+                let html = `
+                    <style>
+                        .community-join-section { display: flex; gap: 15px; margin-top: 25px; margin-bottom: 30px; width: 100%; }
+                        .community-btn { flex: 1; padding: 12px !important; border-radius: 8px !important; text-align: center !important; text-decoration: none !important; font-weight: 600 !important; color: #ffffff !important; font-size: 0.9rem !important; transition: transform 0.2s, box-shadow 0.2s; border: none !important; outline: none !important; display: inline-block; }
+                        .community-btn:hover { transform: translateY(-2px); box-shadow: var(--glass-shadow); color: #ffffff !important; }
+                        .telegram-btn { background: linear-gradient(135deg, #0088cc, #00aaff) !important; }
+                        .whatsapp-btn { background: linear-gradient(135deg, #25D366, #128C7E) !important; }
+                        @media (max-width: 768px) { .community-join-section { flex-direction: column; } }
+                    </style>
+                    <div class="community-join-section">
+                `;
                 
                 if (telegram) {
                     html += `
-                        <a href="${telegram}" target="_blank" rel="noopener noreferrer" class="community-btn telegram-btn" aria-label="Join Telegram">
+                        <a href="${telegram}" target="_blank" rel="noopener noreferrer" class="community-btn telegram-btn" aria-label="Join Telegram" id="telegram-link">
                             <i class="fab fa-telegram-plane"></i> Join Telegram
                         </a>
                     `;
@@ -438,7 +448,7 @@ const OneSportsMatch = (() => {
                 
                 if (whatsapp) {
                     html += `
-                        <a href="${whatsapp}" target="_blank" rel="noopener noreferrer" class="community-btn whatsapp-btn" aria-label="Join WhatsApp">
+                        <a href="${whatsapp}" target="_blank" rel="noopener noreferrer" class="community-btn whatsapp-btn" aria-label="Join WhatsApp" id="whatsapp-link">
                             <i class="fab fa-whatsapp"></i> Join WhatsApp
                         </a>
                     `;
