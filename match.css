@@ -371,28 +371,28 @@
 .os-lu-sw-btn.active .os-lu-sw-form { background: rgba(0,0,0,0.25); }
 
 /* ── Panel ── */
-.os-lu-panel { width: 100%; perspective: 1200px; }
+.os-lu-panel { width: 100%; }
 
-/* ── 3D pitch wrapper — clips the foreshortened bottom so no blank space ── */
+/* ── 3D pitch wrapper ── */
 .os-lu-pitch-wrap {
-    overflow: hidden;
-    /* crop the large negative-margin area; height matches visible 3D pitch */
-    max-height: 340px;
-    position: relative;
+    width: 100%;
+    perspective: 1400px;
+    perspective-origin: 50% 0%;
+    /* no overflow hidden — let the 3D pitch show fully */
 }
 
-/* ── Portrait pitch ── */
+/* ── 3D Portrait pitch ── */
 .os-lu-pitch-bg {
-    transform: rotateX(38deg);
+    transform: rotateX(42deg);
     transform-origin: top center;
     transform-style: preserve-3d;
-    /* margin: auto centers; negative bottom pulls subs up */
-    margin: 8% auto -38%;
-    width: 86%;
+    /* centre horizontally, negative bottom pulls subs closer */
+    margin: 6% auto -42%;
+    width: 84%;
     border-radius: 6px;
-    box-shadow: 0 12px 35px rgba(0,0,0,0.6);
+    box-shadow: 0 14px 40px rgba(0,0,0,0.7);
     position: relative;
-    padding-top: 118%;
+    padding-top: 130%; /* tall enough to show full pitch after rotation */
     background: linear-gradient(180deg,
         #2d7a3a 0%, #337d3f 12%, #2d7a3a 24%,
         #337d3f 36%, #2d7a3a 48%, #337d3f 60%,
@@ -477,25 +477,23 @@
 }
 .os-lu-tok-photo-wrap {
     position: relative;
-    width: 44px; height: 44px;
+    width: 58px; height: 58px;
 }
 .os-lu-tok-photo {
-    width: 44px; height: 44px;
+    width: 58px; height: 58px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid rgba(255,255,255,0.85);
     background: rgba(0,0,0,0.3);
     display: block;
-    /* 3D sphere effect */
     box-shadow:
         0 -2px 5px rgba(255,255,255,0.3),
         0 5px 15px rgba(0,0,0,0.75),
         inset 0 -4px 8px rgba(0,0,0,0.35);
 }
 .os-lu-tok-fallback {
-    width: 44px; height: 44px;
+    width: 58px; height: 58px;
     border-radius: 50%;
-    /* 3D gradient: brighter top-left, darker bottom-right */
     background: radial-gradient(circle at 35% 30%, rgba(100,100,120,0.9), rgba(20,20,30,0.95));
     border: 3px solid rgba(255,255,255,0.55);
     align-items: center;
@@ -669,9 +667,9 @@
 .os-lu-empty { text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.82rem; }
 
 @media (max-width: 480px) {
-    .os-lu-tok-photo, .os-lu-tok-fallback { width: 56px; height: 56px; }
-    .os-lu-tok-photo-wrap { width: 56px; height: 56px; }
-    .os-lu-tok-name { font-size: 0.72rem; max-width: 70px; }
+    .os-lu-tok-photo, .os-lu-tok-fallback { width: 44px; height: 44px; }
+    .os-lu-tok-photo-wrap { width: 44px; height: 44px; }
+    .os-lu-tok-name { font-size: 0.65rem; max-width: 60px; }
     .os-lu-sw-btn { font-size: 0.7rem; padding: 5px 10px; }
 }
 

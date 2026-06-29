@@ -818,15 +818,18 @@ const MatchRenderer = {
 
     _luFormationRows(formation) {
         const rows = String(formation).split('-').map(Number).filter(n => n > 0);
-        const allRows = [1, ...rows]; // GK row first (bottom)
+        // rows[0] = defenders, rows[last] = forwards, we prepend GK
+        // In portrait 3D: bottom = near viewer (GK), top = far (attack)
+        // So GK gets highest y%, forwards get lowest y%
+        const allRows = [1, ...rows]; // index 0 = GK
         const total = allRows.length;
         const positions = [];
-        // y: GK at 88%, forwards at 6% — spread evenly, keep away from very edges
-        // x: within 12%–88% so tokens never clip left/right edges
         allRows.forEach((count, ri) => {
-            const yPct = 88 - (ri / (total - 1)) * 82;
+            // ri=0 (GK) → yPct=86%, ri=last (forwards) → yPct=8%
+            const yPct = 86 - (ri / (total - 1)) * 78;
             for (let pi = 0; pi < count; pi++) {
-                const xPct = 12 + ((pi + 1) / (count + 1)) * 76;
+                // x within 14%–86% so tokens stay within pitch width
+                const xPct = 14 + ((pi + 1) / (count + 1)) * 72;
                 positions.push({ x: xPct, y: yPct });
             }
         });
@@ -839,14 +842,14 @@ const MatchRenderer = {
             const pos = positions[i] || { x: 50, y: 50 };
             const imgUrl = this._luGetPlayerImageUrl(p.athleteId, p.imageVersion);
 
-            // Full name shown — last name only if name has multiple parts (keeps it readable on pitch)
             const nameParts = p.name.split(' ');
             const displayName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : p.name;
-
-            // Initials for fallback circle
             const initials = nameParts.length > 1
                 ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
                 : p.name.substring(0, 2).toUpperCase();
+
+            // z-index: players near viewer (high y%) appear on top
+            const zIdx = Math.round(pos.y);
 
             const evIcons = [];
             if (p.playerEvs.includes('goal'))   evIcons.push('<i class="fas fa-futbol os-lu-ev-goal"></i>');
@@ -854,17 +857,16 @@ const MatchRenderer = {
             if (p.playerEvs.includes('red'))    evIcons.push('<i class="fas fa-square os-lu-ev-red"></i>');
             if (p.isSubOff) evIcons.push('<i class="fas fa-arrow-down os-lu-ev-suboff"></i>');
             const evHtml = evIcons.length ? `<div class="os-lu-tok-evs">${evIcons.join('')}</div>` : '';
-            const ratingHtml = p.ranking ? `<div class="os-lu-tok-ranking" style="background-color:${p.ranking >= 8 ? '#4caf50' : (p.ranking >= 7 ? '#ff9800' : '#ff9800')}">${Number(p.ranking).toFixed(1)}</div>` : '';
-            return `<div class="os-lu-tok" style="left:${pos.x}%;top:${pos.y}%;">
+
+            return `<div class="os-lu-tok" style="left:${pos.x}%;top:${pos.y}%;z-index:${zIdx};">
                 <div class="os-lu-tok-photo-wrap">
-                    <img class="os-lu-tok-photo" src="${imgUrl}" width="44" height="44"
+                    <img class="os-lu-tok-photo" src="${imgUrl}" width="58" height="58"
                         loading="lazy" decoding="async" alt="${p.name}"
                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                     <div class="os-lu-tok-fallback" style="display:none;">${initials}</div>
                     ${p.num ? `<div class="os-lu-tok-num-badge">${p.num}</div>` : ''}
                     ${p.isCap ? '<div class="os-lu-tok-cap">C</div>' : ''}
                     ${evHtml}
-                    ${ratingHtml}
                 </div>
                 <div class="os-lu-tok-name">${displayName}</div>
             </div>`;
