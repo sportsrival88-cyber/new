@@ -367,23 +367,25 @@
 /* ── Portrait pitch ── */
 .os-lu-pitch-bg {
     transform: rotateX(45deg);
+    transform-origin: top center;
     transform-style: preserve-3d;
-    margin: -10% 5% -10%;
+    margin: 5% auto -30%;
     width: 90%;
     border-radius: 8px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     position: relative;
-    width: 100%;
-    padding-top: 90%; /* adjusted for 3D */
+    padding-top: 110%; /* full length of pitch */
     background: linear-gradient(180deg,
         #2d7a3a 0%, #337d3f 12%, #2d7a3a 24%,
         #337d3f 36%, #2d7a3a 48%, #337d3f 60%,
         #2d7a3a 72%, #337d3f 84%, #2d7a3a 100%);
-    overflow: hidden;
 }
 .os-lu-pitch-marks, .os-lu-pitch-players {
     position: absolute;
     inset: 0;
+}
+.os-lu-pitch-players {
+    transform-style: preserve-3d;
 }
 /* Pitch markings */
 .os-lu-pm-border {
@@ -449,7 +451,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    transform: translate(-50%, -50%) rotateX(-45deg);
+    transform: translate(-50%, -100%) rotateX(-45deg) translateZ(10px);
     transform-origin: bottom center;
     z-index: 3;
     cursor: default;

@@ -823,7 +823,14 @@ const MatchRenderer = {
             const imgUrl = this._luGetPlayerImageUrl(p.athleteId, p.imageVersion);
             // Use last name, but if it's 1 word use full name
             const parts = p.name.split(' ');
-            const shortName = parts.length > 1 ? parts[parts.length - 1] : p.name;
+            const shortName = p.name;
+            
+            let initials = '?';
+            if (p.name) {
+                const nParts = p.name.split(' ');
+                initials = nParts.length > 1 ? (nParts[0][0] + nParts[nParts.length-1][0]).toUpperCase() : nParts[0].substring(0,2).toUpperCase();
+            }
+
             const evIcons = [];
             if (p.playerEvs.includes('goal'))   evIcons.push('<i class="fas fa-futbol os-lu-ev-goal"></i>');
             if (p.playerEvs.includes('yellow')) evIcons.push('<i class="fas fa-square os-lu-ev-yellow"></i>');
@@ -835,7 +842,7 @@ const MatchRenderer = {
                     <img class="os-lu-tok-photo" src="${imgUrl}" width="58" height="58"
                         loading="lazy" decoding="async" alt="${p.name}"
                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                    <div class="os-lu-tok-fallback" style="display:none;">${p.num || '?'}</div>
+                    <div class="os-lu-tok-fallback" style="display:none;">${p.num || initials}</div>
                     ${p.num ? `<div class="os-lu-tok-num-badge">${p.num}</div>` : ''}
                     ${p.isCap ? '<div class="os-lu-tok-cap">C</div>' : ''}
                     ${evHtml}
@@ -857,7 +864,7 @@ const MatchRenderer = {
                 <img class="os-lu-sub-photo" src="${imgUrl}" width="36" height="36"
                     loading="lazy" decoding="async" alt="${p.name}"
                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <div class="os-lu-sub-photo-fallback" style="display:none;">${p.num || '?'}</div>
+                <div class="os-lu-sub-photo-fallback" style="display:none;">${p.num || initials}</div>
             </div>
             <div class="os-lu-sub-info">
                 <span class="os-lu-sub-name">${p.name}${p.isCap ? ' <span class="os-lu-cap">C</span>' : ''}</span>
