@@ -24,11 +24,12 @@
    ========================================== */
 .post-title {
     font-family: var(--font-heading) !important;
-    font-size: 2.2rem !important;
+    font-size: 2.05rem !important;
     font-weight: 700 !important;
     color: var(--text-main) !important;
     text-transform: uppercase !important;
     letter-spacing: 1px !important;
+    margin-top: -15px !important;
     margin-bottom: 20px !important;
     text-align: center !important;
     width: 100%;
@@ -44,9 +45,9 @@
    1. POSTER BANNER
    ========================================== */
 .os-poster-container {
-    width: 80%;
+    width: 100%;
     margin: 0 auto 20px auto;
-    max-height: 320px;
+    max-height: 380px;
     border-radius: 16px;
     overflow: hidden;
     position: relative;
