@@ -750,8 +750,9 @@ const MatchRenderer = {
 
     // ── Lineup helpers ──────────────────────────────────────────────────────
 
-    _luGetPlayerImageUrl(athleteId) {
-        return `https://imagecache.365scores.com/image/upload/f_png,w_80,h_80,c_fill,g_face,q_auto:eco,d_Athletes:default1.png/v1/Athletes/${athleteId}`;
+    _luGetPlayerImageUrl(athleteId, imageVersion) {
+        const v = imageVersion || 1;
+        return `https://imagecache.365scores.com/image/upload/f_png,w_200,h_200,c_fill,g_face,q_auto:eco,d_Athletes:default1.png/v${v}/Athletes/${athleteId}`;
     },
 
     _luParseTeam(competitor, members, events) {
@@ -788,11 +789,12 @@ const MatchRenderer = {
             const pos  = Security.escapeHTML(member.position ? member.position.name : '');
             const isCap = member.statusText === 'Captain' || (athlete && athlete.isCaptain);
             const athleteId = member.id;
+            const imageVersion = athlete ? (athlete.imageVersion || athlete.imgVer || 1) : 1;
             const playerEvs  = evMap[athleteId] || [];
             const isSubOn    = playerEvs.includes('subbed-on');
             const isSubOff   = playerEvs.includes('subbed-off');
             const subTime    = (playerEvs.find(e => e.startsWith('subtime:')) || '').replace('subtime:', '');
-            const p = { name, num, pos, isCap, athleteId, playerEvs, isSubOn, isSubOff, subTime, member };
+            const p = { name, num, pos, isCap, athleteId, imageVersion, playerEvs, isSubOn, isSubOff, subTime, member };
             if (member.status === 1)      starters.push(p);
             else if (member.status === 2) subs.push(p);
             else if (member.status === 4) coach = name;
@@ -818,7 +820,7 @@ const MatchRenderer = {
         const positions = this._luFormationRows(parsed.formation);
         return parsed.starters.map((p, i) => {
             const pos = positions[i] || { x: 50, y: 50 };
-            const imgUrl = this._luGetPlayerImageUrl(p.athleteId);
+            const imgUrl = this._luGetPlayerImageUrl(p.athleteId, p.imageVersion);
             // Use last name, but if it's 1 word use full name
             const parts = p.name.split(' ');
             const shortName = parts.length > 1 ? parts[parts.length - 1] : p.name;
@@ -844,7 +846,7 @@ const MatchRenderer = {
     },
 
     _luSubRow(p) {
-        const imgUrl = this._luGetPlayerImageUrl(p.athleteId);
+        const imgUrl = this._luGetPlayerImageUrl(p.athleteId, p.imageVersion);
         const evs = [];
         if (p.playerEvs.includes('goal'))   evs.push('<i class="fas fa-futbol os-lu-ev-goal"></i>');
         if (p.playerEvs.includes('yellow')) evs.push('<i class="fas fa-square os-lu-ev-yellow"></i>');

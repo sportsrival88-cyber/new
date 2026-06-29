@@ -368,7 +368,7 @@
 .os-lu-pitch-bg {
     position: relative;
     width: 100%;
-    padding-top: 140%; /* tall portrait ratio */
+    padding-top: 110%; /* shorter portrait pitch */
     background: linear-gradient(180deg,
         #2d7a3a 0%, #337d3f 12%, #2d7a3a 24%,
         #337d3f 36%, #2d7a3a 48%, #337d3f 60%,
