@@ -794,7 +794,7 @@ const MatchRenderer = {
             const num  = String(athlete && athlete.jerseyNum !== undefined ? athlete.jerseyNum : (member.jerseyNumber || ''));
             const pos  = Security.escapeHTML(member.position ? member.position.name : (member.positionName || ''));
             const isCap = member.statusText === 'Captain' || (athlete && athlete.isCaptain) || member.isCaptain;
-            const athleteId = member.id;
+            const athleteId = (athlete && athlete.athleteId) ? athlete.athleteId : member.id;
             // Try every known field 365scores uses for athlete image version
             const imageVersion = (athlete && (athlete.imageVersion || athlete.imgVer || athlete.imageVer))
                 || member.imageVersion || member.imgVer || 1;
@@ -802,7 +802,7 @@ const MatchRenderer = {
             const isSubOn    = playerEvs.includes('subbed-on');
             const isSubOff   = playerEvs.includes('subbed-off');
             const subTime    = (playerEvs.find(e => e.startsWith('subtime:')) || '').replace('subtime:', '');
-            const p = { name, num, pos, isCap, athleteId, imageVersion, playerEvs, isSubOn, isSubOff, subTime, member };
+            const p = { name, num, pos, isCap, athleteId, imageVersion, playerEvs, isSubOn, isSubOff, subTime, ranking: member.ranking, member };
             // Coach detection: status 4, or statusText containing coach/manager
             const statusStr = String(member.statusText || '').toLowerCase();
             if (member.status === 4 || statusStr.includes('coach') || statusStr.includes('manager')) {
@@ -851,15 +851,17 @@ const MatchRenderer = {
             if (p.playerEvs.includes('red'))    evIcons.push('<i class="fas fa-square os-lu-ev-red"></i>');
             if (p.isSubOff) evIcons.push('<i class="fas fa-arrow-down os-lu-ev-suboff"></i>');
             const evHtml = evIcons.length ? `<div class="os-lu-tok-evs">${evIcons.join('')}</div>` : '';
+            const ratingHtml = p.ranking ? `<div class="os-lu-tok-ranking" style="background-color:${p.ranking >= 8 ? '#4caf50' : (p.ranking >= 7 ? '#ff9800' : '#ff9800')}">${Number(p.ranking).toFixed(1)}</div>` : '';
             return `<div class="os-lu-tok" style="left:${pos.x}%;top:${pos.y}%;">
                 <div class="os-lu-tok-photo-wrap">
-                    <img class="os-lu-tok-photo" src="${imgUrl}" width="58" height="58"
+                    <img class="os-lu-tok-photo" src="${imgUrl}" width="50" height="50"
                         loading="lazy" decoding="async" alt="${p.name}"
                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                     <div class="os-lu-tok-fallback" style="display:none;">${initials}</div>
                     ${p.num ? `<div class="os-lu-tok-num-badge">${p.num}</div>` : ''}
                     ${p.isCap ? '<div class="os-lu-tok-cap">C</div>' : ''}
                     ${evHtml}
+                    ${ratingHtml}
                 </div>
                 <div class="os-lu-tok-name">${displayName}</div>
             </div>`;
