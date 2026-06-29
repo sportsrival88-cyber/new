@@ -543,7 +543,7 @@ const OneSportsMatch = (() => {
                 iframe.className = 'os-widget-iframe fade-in';
                 iframe.title = "Live Match Center";
                 iframe.setAttribute('allowtransparency', 'true');
-                iframe.style.cssText = "width: 100%; height: 260px; border: none; overflow: hidden; border-radius: 8px; display: block; opacity: 0; transition: opacity 0.5s ease;";
+                iframe.style.cssText = "width: 100%; height: 650px; border: none; overflow: hidden; border-radius: 8px; display: block; opacity: 0; transition: opacity 0.5s ease;";
 
                 // Encapsulate the widget inside an iframe to prevent its global CSS from leaking and breaking the site's layout.
                 const html = `
@@ -552,6 +552,8 @@ const OneSportsMatch = (() => {
                     <head>
                         <meta charset="UTF-8">
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <link rel="preconnect" href="https://widgets.365scores.com">
+                        <link rel="preload" href="https://widgets.365scores.com/main.js" as="script">
                         <style>
                             body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
                             #powered-by { display: none !important; }
