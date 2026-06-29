@@ -861,7 +861,7 @@ const MatchRenderer = {
 
             return `<div class="os-lu-tok" style="left:${pos.x}%;top:${pos.y}%;z-index:${zIdx};">
                 <div class="os-lu-tok-photo-wrap">
-                    <img class="os-lu-tok-photo" src="${imgUrl}" width="48" height="48"
+                    <img class="os-lu-tok-photo" src="${imgUrl}" width="68" height="68"
                         loading="lazy" decoding="async" alt="${p.name}"
                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                     <div class="os-lu-tok-fallback" style="display:none;">${initials}</div>
