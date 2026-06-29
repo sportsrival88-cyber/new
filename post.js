@@ -648,14 +648,12 @@ const OneSportsMatch = (() => {
                         .standings-table td { padding: 12px 8px; border-bottom: 1px solid rgba(255,255,255,0.02); text-align: left; vertical-align: middle; }
                         .standings-table tr:hover td { background: rgba(255,255,255,0.03); }
                         .standings-table .team-name { text-align: left; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-                        .group-selector { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--glass-border); padding: 5px 10px; border-radius: 6px; outline: none; }
                         .qualified-row { background: rgba(12, 247, 55, 0.03) !important; }
                         .qualified-row td:first-child { border-left: 3px solid #0CF737; }
                     </style>
                     <div id="os-standings-widget" class="glass-card os-standings-container fade-in" style="min-height: auto; padding: 20px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
                             <h3 style="margin: 0; font-family: var(--font-heading); font-size: 1.2rem;"><i class="fas fa-list-ol" style="color: var(--secondary); margin-right: 8px;"></i> Standings</h3>
-                            <select class="group-selector" id="os-group-selector" style="display: none;"></select>
                         </div>
                         <div style="overflow-x: auto;">
                             <table class="standings-table">
@@ -669,11 +667,10 @@ const OneSportsMatch = (() => {
                                         <th style="width:30px;" title="Lost">L</th>
                                         <th style="width:40px;" title="Goal Difference">GD</th>
                                         <th style="width:40px;" title="Points">Pts</th>
-                                        <th style="width:80px;" title="Form">Form</th>
                                     </tr>
                                 </thead>
                                 <tbody id="os-standings-body">
-                                    <tr><td colspan="9" style="padding:40px;">
+                                    <tr><td colspan="8" style="padding:40px;">
                                         <div class="os-skeleton-row" style="height: 30px; margin-bottom: 10px;"></div>
                                         <div class="os-skeleton-row" style="height: 30px; margin-bottom: 10px;"></div>
                                         <div class="os-skeleton-row" style="height: 30px;"></div>
@@ -710,60 +707,77 @@ const OneSportsMatch = (() => {
             },
 
             setupGroups: () => {
-                const selector = document.getElementById('os-group-selector');
-                const groups = [...new Set(Modules.Standings.allRows.map(r => r.groupNum || 1))];
+                const match = window.OneSports.Api.getMatch();
+                const homeId = match?.homeTeam?.id;
+                const awayId = match?.awayTeam?.id;
+
+                const homeRow = Modules.Standings.allRows.find(r => r.competitor.id === homeId);
+                const awayRow = Modules.Standings.allRows.find(r => r.competitor.id === awayId);
+
+                let targetGroups = new Set();
+                if (homeRow) targetGroups.add(homeRow.groupNum || 1);
+                if (awayRow) targetGroups.add(awayRow.groupNum || 1);
                 
-                if (groups.length > 1) {
-                    selector.style.display = 'block';
-                    selector.innerHTML = groups.map(g => `<option value="${g}">${Modules.Standings.getGroupName(g)}</option>`).join('');
-                    selector.addEventListener('change', (e) => {
-                        Modules.Standings.currentGroupNum = parseInt(e.target.value, 10);
-                        Modules.Standings.renderTable();
-                    });
-                } else {
-                    Modules.Standings.currentGroupNum = groups[0] || 1;
-                }
+                if (targetGroups.size === 0) targetGroups.add(1);
+
+                Modules.Standings.targetGroups = Array.from(targetGroups).sort();
             },
 
             renderTable: () => {
                 const tbody = document.getElementById('os-standings-body');
                 if (!Modules.Standings.allRows.length) return;
 
-                const groupRows = Modules.Standings.allRows.filter(r => (r.groupNum || 1) === Modules.Standings.currentGroupNum);
+                const match = window.OneSports.Api.getMatch();
+                const homeId = match?.homeTeam?.id;
+                const awayId = match?.awayTeam?.id;
                 
-                if (groupRows.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-muted);">No standings available.</td></tr>`;
-                    return;
-                }
-
-                groupRows.sort((a,b) => a.position - b.position);
-
+                const allGroups = [...new Set(Modules.Standings.allRows.map(r => r.groupNum || 1))];
                 let html = "";
-                groupRows.forEach(row => {
-                    const c = row.competitor;
-                    const flagUrl = `https://imagecache.365scores.com/image/upload/f_auto,q_auto,w_48/v1/Competitors/${c.id}`;
-                    const isQualified = row.position <= 2;
-                    const rowClass = isQualified ? 'qualified-row' : '';
 
-                    html += `
-                    <tr class="${rowClass}">
-                        <td>${row.position}</td>
-                        <td class="team-name">
-                            <img src="${flagUrl}" width="24" height="24" style="border-radius:50%; object-fit:cover;" alt="${c.name}" loading="lazy">
-                            <span>${c.name}</span>
-                        </td>
-                        <td>${row.gamePlayed}</td>
-                        <td>${row.gamesWon}</td>
-                        <td>${row.gamesEven}</td>
-                        <td>${row.gamesLost}</td>
-                        <td>${row.for - row.against > 0 ? '+' : ''}${row.for - row.against}</td>
-                        <td style="font-weight:bold; color:var(--secondary);">${row.points}</td>
-                        <td>${Modules.Standings.getFormBadges(row.recentForm)}</td>
-                    </tr>
-                    `;
+                Modules.Standings.targetGroups.forEach(groupNum => {
+                    const groupRows = Modules.Standings.allRows.filter(r => (r.groupNum || 1) === groupNum);
+                    
+                    if (groupRows.length === 0) return;
+
+                    // Group Divider
+                    if (allGroups.length > 1) {
+                        html += `<tr><td colspan="8" style="background:rgba(255,255,255,0.05); font-weight:bold; color:var(--text-main); text-align:left; padding:10px 12px; letter-spacing:0.5px; border-radius:4px;">${Modules.Standings.getGroupName(groupNum)}</td></tr>`;
+                    }
+
+                    groupRows.sort((a,b) => a.position - b.position);
+
+                    groupRows.forEach(row => {
+                        const c = row.competitor;
+                        const flagUrl = `https://imagecache.365scores.com/image/upload/f_auto,q_auto,w_48/v1/Competitors/${c.id}`;
+                        const isQualified = row.position <= 2;
+                        const rowClass = isQualified ? 'qualified-row' : '';
+                        
+                        const isPlaying = (c.id === homeId || c.id === awayId);
+                        const highlightStyle = isPlaying ? 'background: rgba(255,255,255,0.08); font-weight: bold; border-left: 2px solid var(--primary);' : '';
+
+                        html += `
+                        <tr class="${rowClass}" style="${highlightStyle}">
+                            <td>${row.position}</td>
+                            <td class="team-name">
+                                <img src="${flagUrl}" width="24" height="24" style="border-radius:50%; object-fit:cover;" alt="${c.name}" loading="lazy">
+                                <span>${c.name}</span>
+                            </td>
+                            <td>${row.gamePlayed}</td>
+                            <td>${row.gamesWon}</td>
+                            <td>${row.gamesEven}</td>
+                            <td>${row.gamesLost}</td>
+                            <td>${row.for - row.against > 0 ? '+' : ''}${row.for - row.against}</td>
+                            <td style="font-weight:bold; color:var(--secondary);">${row.points}</td>
+                        </tr>
+                        `;
+                    });
                 });
 
-                tbody.innerHTML = html;
+                if (html === "") {
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-muted);">No standings available for these teams.</td></tr>`;
+                } else {
+                    tbody.innerHTML = html;
+                }
             }
         },
 
