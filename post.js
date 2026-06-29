@@ -364,34 +364,38 @@ const OneSportsMatch = (() => {
                         <!-- Content layer -->
                         <div style="position: relative; z-index: 2;">
                             
-                            <!-- Top Row: Competition & Round -->
-                            <div class="match-header" style="justify-content: space-between; height: 24px; margin-bottom: 30px;">
+                            <!-- Top Row: Competition, Logo, & Round -->
+                            <div class="match-header" style="display: flex; justify-content: space-between; align-items: center; position: relative; height: 24px; margin-bottom: 30px;">
                                 ${compName ? `
                                 <div style="display:flex; align-items:center;">
                                     ${compLogo ? `<img src="${compLogo}" alt="Cup" style="width:20px; height:20px; margin-right:8px; border-radius:2px;">` : ''}
                                     <span style="text-transform: uppercase; color: #ffffff; font-weight: 600; font-size: 0.9rem; letter-spacing: 0.5px;">${compName}</span>
                                 </div>` : '<div></div>'}
                                 
+                                <div style="position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--font-heading); font-weight: 900; letter-spacing: 1px; color: var(--text-muted); font-size: 0.9rem; opacity: 0.6;">
+                                    ONE<span style="color:var(--primary);">SPORTS</span>
+                                </div>
+
                                 ${roundText ? `
                                 <div style="color: #ffffff; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; opacity: 0.8;">
                                     ${roundText}
-                                </div>` : ''}
+                                </div>` : '<div></div>'}
                             </div>
 
                             <!-- Middle Row: Teams & VS -->
-                            <div class="match-teams-score" style="margin-top: 10px; margin-bottom: 40px;">
-                                <div class="team" style="width: 40%;">
+                            <div class="match-teams-score" style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin-top: 10px; margin-bottom: 40px; width: 100%;">
+                                <div class="team" style="display: flex; flex-direction: column; align-items: center; width: 40%;">
                                     <img src="${homeLogoUrl}" alt="${match.homeTeam?.name}" style="width: 85px; height: 85px; margin-bottom: 15px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));">
-                                    <div class="team-name" style="font-size: 1.4rem; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">${match.homeTeam?.name || 'Home Team'}</div>
+                                    <div class="team-name" style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; color: #ffffff; letter-spacing: 1px; text-transform: uppercase; text-align: center;">${match.homeTeam?.name || 'Home Team'}</div>
                                 </div>
 
                                 <div class="score-area" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 20%;">
                                     <div style="font-family: var(--font-heading); font-size: 2.5rem; font-weight: 900; color: #ffffff; opacity: 0.7; letter-spacing: 2px;">VS</div>
                                 </div>
 
-                                <div class="team" style="width: 40%;">
+                                <div class="team" style="display: flex; flex-direction: column; align-items: center; width: 40%;">
                                     <img src="${awayLogoUrl}" alt="${match.awayTeam?.name}" style="width: 85px; height: 85px; margin-bottom: 15px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));">
-                                    <div class="team-name" style="font-size: 1.4rem; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">${match.awayTeam?.name || 'Away Team'}</div>
+                                    <div class="team-name" style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; color: #ffffff; letter-spacing: 1px; text-transform: uppercase; text-align: center;">${match.awayTeam?.name || 'Away Team'}</div>
                                 </div>
                             </div>
 
