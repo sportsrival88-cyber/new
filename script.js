@@ -1,4 +1,4 @@
-// api.js
+﻿// api.js
 const API = {
     inFlightRequests: {},
 
@@ -788,54 +788,98 @@ const UI = {
     }
 };
 // router.js
-async function initApp() {
-    // 1. Initialize Social Links
-    if (window.SocialLinks) {
-        const tgBtn = document.getElementById('telegram-link');
-        const waBtn = document.getElementById('whatsapp-link');
-        if (tgBtn && window.SocialLinks.Telegram) tgBtn.href = window.SocialLinks.Telegram;
-        if (waBtn && window.SocialLinks.WhatsApp) waBtn.href = window.SocialLinks.WhatsApp;
-    }
+// ==========================================
+// PAGE INITIALIZATION ARCHITECTURE
+// ==========================================
+const PageManager = {
+    
+    detectPageType() {
+        if (document.getElementById('matches-container')) {
+            return 'homepage';
+        }
+        // Blogger dynamically adds 'post' class or we have our custom 'blog-content'
+        if (document.querySelector('.post') || document.getElementById('blog-content') || document.getElementById('comments')) {
+            return 'article';
+        }
+        return 'static'; // Default fallback for informational pages (About, Terms, etc)
+    },
 
-    // 2. Initialize UI Listeners
-    UI.init();
-
-    // 3. Strict Sequential Loading with Tomorrow fallback logic
-    try {
-        Fixtures.renderSkeletons();
+    async init() {
+        // 1. Always initialize Navbar/Footer UI elements (Theme toggles, mobile menu)
+        if (window.UI) UI.init();
         
-        const todayData = await Fixtures.loadDay(0, false);
-        const activeGames = Fixtures.getFilteredGames(todayData);
-        
-        const allEnded = activeGames.length > 0 && activeGames.every(g => g.statusText === "Ended");
-        const noGames = activeGames.length === 0;
-
-        if (allEnded || noGames) {
-            const tabs = document.querySelectorAll('.date-filters .filter-tab');
-            tabs.forEach(t => t.classList.remove('active'));
-            const tomorrowTab = Array.from(tabs).find(t => t.getAttribute('data-day') === "tomorrow");
-            if(tomorrowTab) tomorrowTab.classList.add('active');
-            
-            await Fixtures.loadDay(1, true);   // 1. Tomorrow (Active)
-        } else {
-            Fixtures.render(todayData, true, 0); // 1. Today (Active)
-            await Fixtures.loadDay(1, false);    // 2. Tomorrow (Background)
+        // 2. Initialize global social links
+        if (window.SocialLinks) {
+            const tgBtn = document.getElementById('telegram-link');
+            const waBtn = document.getElementById('whatsapp-link');
+            if (tgBtn && window.SocialLinks.Telegram) tgBtn.href = window.SocialLinks.Telegram;
+            if (waBtn && window.SocialLinks.WhatsApp) waBtn.href = window.SocialLinks.WhatsApp;
         }
 
-        await Fixtures.loadDay(-1, false); // 3. Yesterday
-        await Standings.load();            // 4. Standings
-        await Leaderboards.load();         // 5. Goals & Assists (fetched in one payload)
-        await News.load();                 // 6. Live Football News
-    } catch (err) {
-        console.error("Sequential load failed:", err);
-    }
+        const pageType = this.detectPageType();
+        console.log(`PageManager: Detected [${pageType}] page.`);
 
-    LiveUpdater.start();
-}
+        switch(pageType) {
+            case 'homepage':
+                await this.initHomepage();
+                break;
+            case 'article':
+                this.initArticle();
+                break;
+            case 'static':
+                this.initStaticPage();
+                break;
+        }
+    },
+
+    async initHomepage() {
+        // Strict Sequential Loading with Tomorrow fallback logic
+        try {
+            Fixtures.renderSkeletons();
+            
+            const todayData = await Fixtures.loadDay(0, false);
+            const activeGames = Fixtures.getFilteredGames(todayData);
+            
+            const allEnded = activeGames.length > 0 && activeGames.every(g => g.statusText === "Ended");
+            const noGames = activeGames.length === 0;
+
+            if (allEnded || noGames) {
+                const tabs = document.querySelectorAll('.date-filters .filter-tab');
+                tabs.forEach(t => t.classList.remove('active'));
+                const tomorrowTab = Array.from(tabs).find(t => t.getAttribute('data-day') === "tomorrow");
+                if(tomorrowTab) tomorrowTab.classList.add('active');
+                
+                await Fixtures.loadDay(1, true);   // 1. Tomorrow (Active)
+            } else {
+                Fixtures.render(todayData, true, 0); // 1. Today (Active)
+                await Fixtures.loadDay(1, false);    // 2. Tomorrow (Background)
+            }
+
+            await Fixtures.loadDay(-1, false); // 3. Yesterday
+            await Standings.load();            // 4. Standings
+            await Leaderboards.load();         // 5. Goals & Assists
+            await News.load();                 // 6. Live Football News
+        } catch (err) {
+            console.error("Sequential load failed:", err);
+        }
+
+        LiveUpdater.start();
+    },
+
+    initArticle() {
+        // Place future article-level enhancements here (e.g. related posts, image lazy loading)
+        console.log("Article-specific enhancements initialized.");
+    },
+
+    initStaticPage() {
+        // Place future static-page scripts here
+        console.log("Static page initialized.");
+    }
+};
 
 // Start application
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initApp);
+    document.addEventListener('DOMContentLoaded', () => PageManager.init());
 } else {
-    initApp();
+    PageManager.init();
 }
