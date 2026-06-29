@@ -336,21 +336,7 @@ const OneSportsMatch = (() => {
                 `;
                 container.insertAdjacentHTML('beforeend', html);
                 window.OneSports.log('Poster Module rendered.');
-            }
-        },
 
-        MatchTitle: {
-            init: async () => {
-                const container = document.getElementById('onesports-match');
-                const match = window.OneSports.Api.getMatch();
-                if (!container || !match) return;
-
-                const coreTitle = Modules.TitleManager.generateCoreTitle(match);
-                const html = `<h1 class="os-match-h1 fade-in">${coreTitle}</h1>`;
-                container.insertAdjacentHTML('beforeend', html);
-                window.OneSports.log('MatchTitle Module rendered.');
-            }
-        },
 
         MatchInfo: {
             init: async () => {
@@ -369,60 +355,52 @@ const OneSportsMatch = (() => {
                 const roundText = match.round ? `Round ${match.round}` : '';
 
                 const html = `
-                    <div class="match-card fade-in" style="margin-bottom: 30px; cursor: default; border-color: var(--glass-border);">
+                    <div class="match-card fade-in" style="margin-bottom: 30px; cursor: default; border-color: var(--glass-border); padding: 30px; border-radius: 20px; background: rgba(20, 20, 25, 0.4); backdrop-filter: blur(10px);">
                         <!-- Background Flag Fills -->
-                        ${homeLogoUrl ? `<div class="card-bg-flag left" style="background-image: url('${homeLogoUrl}')"></div>` : ''}
-                        ${awayLogoUrl ? `<div class="card-bg-flag right" style="background-image: url('${awayLogoUrl}')"></div>` : ''}
+                        ${homeLogoUrl ? `<div class="card-bg-flag left" style="background-image: url('${homeLogoUrl}'); opacity: 0.12; filter: blur(24px) saturate(120%); transform: scale(1.3);"></div>` : ''}
+                        ${awayLogoUrl ? `<div class="card-bg-flag right" style="background-image: url('${awayLogoUrl}'); opacity: 0.12; filter: blur(24px) saturate(120%); transform: scale(1.3);"></div>` : ''}
                         
                         <!-- Content layer -->
                         <div style="position: relative; z-index: 2;">
                             
                             <!-- Top Row: Competition & Round -->
-                            <div class="match-header" style="justify-content: center; height: 24px;">
+                            <div class="match-header" style="justify-content: space-between; height: 24px; margin-bottom: 30px;">
                                 ${compName ? `
-                                <div style="display:flex; align-items:center; position: absolute; left: 0;">
-                                    ${compLogo ? `<img src="${compLogo}" alt="Cup" style="width:16px; height:16px; margin-right:8px; border-radius:2px;">` : ''}
-                                    <span style="text-transform: uppercase; color: var(--primary); font-weight: bold;">${compName}</span>
-                                </div>` : ''}
-                                
-                                <div style="font-family: var(--font-heading); font-weight: 900; letter-spacing: 1px; color: var(--text-muted); font-size: 0.9rem; opacity: 0.5;">
-                                    ONE<span style="color:var(--primary);">SPORTS</span>
-                                </div>
+                                <div style="display:flex; align-items:center;">
+                                    ${compLogo ? `<img src="${compLogo}" alt="Cup" style="width:20px; height:20px; margin-right:8px; border-radius:2px;">` : ''}
+                                    <span style="text-transform: uppercase; color: #ffffff; font-weight: 600; font-size: 0.9rem; letter-spacing: 0.5px;">${compName}</span>
+                                </div>` : '<div></div>'}
                                 
                                 ${roundText ? `
-                                <div style="position: absolute; right: 0; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">
+                                <div style="color: #ffffff; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; opacity: 0.8;">
                                     ${roundText}
                                 </div>` : ''}
                             </div>
 
                             <!-- Middle Row: Teams & VS -->
-                            <div class="match-teams-score" style="margin-top: 20px; margin-bottom: 30px;">
-                                <div class="team">
-                                    <img src="${homeLogoUrl}" alt="${match.homeTeam?.name}" style="width: 70px; height: 70px; margin-bottom: 10px;">
-                                    <div class="team-name" style="font-size: 1.2rem; font-weight: 700;">${match.homeTeam?.name || 'Home Team'}</div>
+                            <div class="match-teams-score" style="margin-top: 10px; margin-bottom: 40px;">
+                                <div class="team" style="width: 40%;">
+                                    <img src="${homeLogoUrl}" alt="${match.homeTeam?.name}" style="width: 85px; height: 85px; margin-bottom: 15px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));">
+                                    <div class="team-name" style="font-size: 1.4rem; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">${match.homeTeam?.name || 'Home Team'}</div>
                                 </div>
 
-                                <div class="score-area" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                    <div style="font-family: var(--font-heading); font-size: 1.8rem; font-weight: 900; color: var(--text-main); opacity: 0.8;">VS</div>
+                                <div class="score-area" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 20%;">
+                                    <div style="font-family: var(--font-heading); font-size: 2.5rem; font-weight: 900; color: #ffffff; opacity: 0.7; letter-spacing: 2px;">VS</div>
                                 </div>
 
-                                <div class="team">
-                                    <img src="${awayLogoUrl}" alt="${match.awayTeam?.name}" style="width: 70px; height: 70px; margin-bottom: 10px;">
-                                    <div class="team-name" style="font-size: 1.2rem; font-weight: 700;">${match.awayTeam?.name || 'Away Team'}</div>
+                                <div class="team" style="width: 40%;">
+                                    <img src="${awayLogoUrl}" alt="${match.awayTeam?.name}" style="width: 85px; height: 85px; margin-bottom: 15px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6));">
+                                    <div class="team-name" style="font-size: 1.4rem; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">${match.awayTeam?.name || 'Away Team'}</div>
                                 </div>
                             </div>
 
                             <!-- Bottom Row: Match Details -->
-                            <div class="os-mi-details">
-                                <div class="os-mi-detail-item"><i class="fas fa-calendar-alt"></i> ${dateStr}</div>
-                                <div class="os-mi-detail-item"><i class="fas fa-clock"></i> ${timeStr}</div>
+                            <div class="os-mi-details" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 25px;">
+                                <div class="os-mi-detail-item" style="color: #ffffff; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.04); border-radius: 8px;"><i class="fas fa-calendar-alt" style="color: #ffffff; opacity: 0.5;"></i> ${dateStr}</div>
+                                <div class="os-mi-detail-item" style="color: #ffffff; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.04); border-radius: 8px;"><i class="fas fa-clock" style="color: #ffffff; opacity: 0.5;"></i> ${timeStr}</div>
                                 ${match.venue?.stadium ? `
-                                <div class="os-mi-detail-item">
-                                    <i class="fas fa-map-marker-alt"></i> ${match.venue.stadium}${match.venue.city ? `, ${match.venue.city}` : ''}
-                                </div>` : ''}
-                                ${match.referee && match.referee !== 'N/A' ? `
-                                <div class="os-mi-detail-item">
-                                    <i class="fas fa-gavel"></i> ${match.referee}
+                                <div class="os-mi-detail-item" style="color: #ffffff; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.04); border-radius: 8px;">
+                                    <i class="fas fa-map-marker-alt" style="color: #ffffff; opacity: 0.5;"></i> ${match.venue.stadium}${match.venue.city ? `, ${match.venue.city}` : ''}
                                 </div>` : ''}
                             </div>
 
@@ -988,7 +966,6 @@ const OneSportsMatch = (() => {
 
     // Organized rendering sequence for future UI modules
     const renderQueue = [
-        Modules.MatchTitle,
         Modules.Poster,
         Modules.MatchInfo,
         Modules.Buttons,
