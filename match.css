@@ -323,58 +323,76 @@
 /* ── Outer wrapper ── */
 .os-lu-outer { width: 100%; font-family: var(--font-main); color: var(--text-main); }
 
-/* ── Top bar: title + team switcher ── */
+/* ── Top bar: title only (no switcher here) ── */
 .os-lu-top-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 16px 10px;
+    padding: 14px 16px 8px;
     border-bottom: 1px solid var(--glass-border);
     flex-wrap: wrap;
     gap: 8px;
+}
+
+/* ── Switcher bar: between heading and pitch ── */
+.os-lu-switcher-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px 6px;
 }
 .os-lu-switcher { display: flex; gap: 6px; }
 .os-lu-sw-btn {
     display: flex;
     align-items: center;
-    padding: 6px 14px;
+    padding: 6px 16px;
     border-radius: 20px;
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     font-weight: 700;
     font-family: var(--font-main);
-    border: 1px solid rgba(255,255,255,0.12);
-    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
     color: var(--text-muted);
     cursor: pointer;
     transition: all 0.2s;
     white-space: nowrap;
+    gap: 6px;
 }
 .os-lu-sw-btn.active { background: var(--primary); color: #000; border-color: var(--primary); }
-.os-lu-sw-btn:hover:not(.active) { background: rgba(255,255,255,0.06); color: var(--text-main); }
+.os-lu-sw-btn:hover:not(.active) { background: rgba(255,255,255,0.08); color: var(--text-main); }
 .os-lu-sw-form {
-    margin-left: 6px;
     font-size: 0.68rem;
     background: rgba(0,0,0,0.2);
-    padding: 1px 6px;
+    padding: 1px 7px;
     border-radius: 8px;
     font-weight: 700;
 }
 .os-lu-sw-btn.active .os-lu-sw-form { background: rgba(0,0,0,0.25); }
 
 /* ── Panel ── */
-.os-lu-panel { width: 100%; perspective: 1000px; }
+.os-lu-panel { width: 100%; perspective: 1200px; }
+
+/* ── 3D pitch wrapper — clips the foreshortened bottom so no blank space ── */
+.os-lu-pitch-wrap {
+    overflow: hidden;
+    /* crop the large negative-margin area; height matches visible 3D pitch */
+    max-height: 340px;
+    position: relative;
+}
 
 /* ── Portrait pitch ── */
 .os-lu-pitch-bg {
-    transform: rotateX(40deg);
+    transform: rotateX(38deg);
     transform-origin: top center;
     transform-style: preserve-3d;
-    margin: 12% auto -25%;
-    width: 88%;
-    border-radius: 8px;
+    /* margin: auto centers; negative bottom pulls subs up */
+    margin: 8% auto -38%;
+    width: 86%;
+    border-radius: 6px;
     box-shadow: 0 12px 35px rgba(0,0,0,0.6);
     position: relative;
-    padding-top: 135%; /* increased pitch length to prevent overlap */
+    padding-top: 118%;
     background: linear-gradient(180deg,
         #2d7a3a 0%, #337d3f 12%, #2d7a3a 24%,
         #337d3f 36%, #2d7a3a 48%, #337d3f 60%,
@@ -559,7 +577,7 @@
 .os-lu-ev-subon  { color: #4caf50; }
 
 /* ── Below pitch: subs + manager ── */
-.os-lu-below { padding: 14px 16px; }
+.os-lu-below { padding: 8px 16px 12px; }
 .os-lu-subs-title {
     font-size: 0.78rem;
     font-weight: 700;
@@ -571,7 +589,7 @@
     align-items: center;
     gap: 6px;
 }
-.os-lu-subs-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.os-lu-subs-list { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
 .os-lu-sub-row {
     display: flex;
     align-items: center;

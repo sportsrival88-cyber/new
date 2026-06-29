@@ -818,13 +818,16 @@ const MatchRenderer = {
 
     _luFormationRows(formation) {
         const rows = String(formation).split('-').map(Number).filter(n => n > 0);
-        const allRows = [1, ...rows]; // GK row first
+        const allRows = [1, ...rows]; // GK row first (bottom)
         const total = allRows.length;
         const positions = [];
+        // y: GK at 88%, forwards at 6% — spread evenly, keep away from very edges
+        // x: within 12%–88% so tokens never clip left/right edges
         allRows.forEach((count, ri) => {
-            const yPct = 85 - (ri / (total - 1)) * 68;
+            const yPct = 88 - (ri / (total - 1)) * 82;
             for (let pi = 0; pi < count; pi++) {
-                positions.push({ x: ((pi + 1) / (count + 1)) * 100, y: yPct });
+                const xPct = 12 + ((pi + 1) / (count + 1)) * 76;
+                positions.push({ x: xPct, y: yPct });
             }
         });
         return positions;
@@ -899,17 +902,19 @@ const MatchRenderer = {
         const pitchTokens = this._luBuildPitchHTML(parsed);
         const subRows = parsed.subs.map(p => this._luSubRow(p)).join('') || '<div class="os-lu-empty">No substitutes listed</div>';
         return `<div class="os-lu-panel">
-            <div class="os-lu-pitch-bg">
-                <div class="os-lu-pitch-marks">
-                    <div class="os-lu-pm-border"></div>
-                    <div class="os-lu-pm-halfway"></div>
-                    <div class="os-lu-pm-circle"></div>
-                    <div class="os-lu-pm-box-top"></div>
-                    <div class="os-lu-pm-box-bot"></div>
-                    <div class="os-lu-pm-goal-top"></div>
-                    <div class="os-lu-pm-goal-bot"></div>
+            <div class="os-lu-pitch-wrap">
+                <div class="os-lu-pitch-bg">
+                    <div class="os-lu-pitch-marks">
+                        <div class="os-lu-pm-border"></div>
+                        <div class="os-lu-pm-halfway"></div>
+                        <div class="os-lu-pm-circle"></div>
+                        <div class="os-lu-pm-box-top"></div>
+                        <div class="os-lu-pm-box-bot"></div>
+                        <div class="os-lu-pm-goal-top"></div>
+                        <div class="os-lu-pm-goal-bot"></div>
+                    </div>
+                    <div class="os-lu-pitch-players">${pitchTokens}</div>
                 </div>
-                <div class="os-lu-pitch-players">${pitchTokens}</div>
             </div>
             <div class="os-lu-below">
                 <div class="os-lu-subs-title"><i class="fas fa-exchange-alt"></i> Substitutes</div>
@@ -968,13 +973,15 @@ const MatchRenderer = {
         const html = `<div class="os-lu-outer">
             <div class="os-lu-top-bar">
                 <span class="os-mi-header" style="margin:0;border:none;padding:0;">Match Lineups</span>
+            </div>
+            <div class="os-lu-switcher-bar">
                 <div class="os-lu-switcher">
                     <button class="os-lu-sw-btn active" id="os-lu-sw-home" onclick="window._osLuSwitch('home')">
-                        <img src="${homeLogo}" width="16" height="16" style="object-fit:contain;vertical-align:middle;margin-right:4px;" alt="">
+                        <img src="${homeLogo}" width="16" height="16" style="object-fit:contain;" alt="">
                         ${hn} <span class="os-lu-sw-form">${homeParsed.formation}</span>
                     </button>
                     <button class="os-lu-sw-btn" id="os-lu-sw-away" onclick="window._osLuSwitch('away')">
-                        <img src="${awayLogo}" width="16" height="16" style="object-fit:contain;vertical-align:middle;margin-right:4px;" alt="">
+                        <img src="${awayLogo}" width="16" height="16" style="object-fit:contain;" alt="">
                         ${an} <span class="os-lu-sw-form">${awayParsed.formation}</span>
                     </button>
                 </div>
