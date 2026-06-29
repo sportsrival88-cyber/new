@@ -356,30 +356,53 @@ const OneSportsMatch = (() => {
                 const roundText = match.round ? `Round ${match.round}` : '';
 
                 const html = `
-                    <div class="match-card fade-in" style="margin-bottom: 30px; cursor: default; border-color: var(--glass-border); padding: 30px; border-radius: 20px; background: rgba(20, 20, 25, 0.4); backdrop-filter: blur(10px);">
+                    <style>
+                        /* Injected Flag Glassmorphic Background Styles */
+                        .card-bg-flag {
+                            position: absolute;
+                            top: -15px;
+                            bottom: -15px;
+                            width: 40%;
+                            background-size: cover;
+                            background-position: center;
+                            background-repeat: no-repeat;
+                            opacity: 0.25;
+                            z-index: 1;
+                            filter: blur(4px) saturate(150%);
+                        }
+                        .card-bg-flag.left {
+                            left: -25px;
+                            mask-image: linear-gradient(to right, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+                            -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+                        }
+                        .card-bg-flag.right {
+                            right: -25px;
+                            mask-image: linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+                            -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+                        }
+                    </style>
+                    <div class="match-card fade-in" style="position: relative; margin-bottom: 30px; cursor: default; border-color: var(--glass-border); padding: 30px; border-radius: 20px; background: rgba(20, 20, 25, 0.4); backdrop-filter: blur(10px); overflow: hidden;">
                         <!-- Background Flag Fills -->
-                        ${homeLogoUrl ? `<div class="card-bg-flag left" style="background-image: url('${homeLogoUrl}'); opacity: 0.12; filter: blur(24px) saturate(120%); transform: scale(1.3);"></div>` : ''}
-                        ${awayLogoUrl ? `<div class="card-bg-flag right" style="background-image: url('${awayLogoUrl}'); opacity: 0.12; filter: blur(24px) saturate(120%); transform: scale(1.3);"></div>` : ''}
+                        ${homeLogoUrl ? `<div class="card-bg-flag left" style="background-image: url('${homeLogoUrl}'); opacity: 0.15; filter: blur(24px) saturate(120%);"></div>` : ''}
+                        ${awayLogoUrl ? `<div class="card-bg-flag right" style="background-image: url('${awayLogoUrl}'); opacity: 0.15; filter: blur(24px) saturate(120%);"></div>` : ''}
                         
                         <!-- Content layer -->
                         <div style="position: relative; z-index: 2;">
                             
                             <!-- Top Row: Competition, Logo, & Round -->
-                            <div class="match-header" style="display: flex; justify-content: space-between; align-items: center; position: relative; height: 24px; margin-bottom: 30px;">
+                            <div class="match-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
                                 ${compName ? `
                                 <div style="display:flex; align-items:center;">
                                     ${compLogo ? `<img src="${compLogo}" alt="Cup" style="width:20px; height:20px; margin-right:8px; border-radius:2px;">` : ''}
                                     <span style="text-transform: uppercase; color: #ffffff; font-weight: 600; font-size: 0.9rem; letter-spacing: 0.5px;">${compName}</span>
                                 </div>` : '<div></div>'}
                                 
-                                <div style="position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--font-heading); font-weight: 900; letter-spacing: 1px; color: var(--text-muted); font-size: 0.9rem; opacity: 0.6;">
-                                    ONE<span style="color:var(--primary);">SPORTS</span>
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    ${roundText ? `<div style="color: #ffffff; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; opacity: 0.8;">${roundText}</div>` : ''}
+                                    <div style="font-family: var(--font-heading); font-weight: 900; letter-spacing: 1px; color: var(--text-muted); font-size: 0.9rem; opacity: 0.6;">
+                                        ONE<span style="color:var(--primary);">SPORTS</span>
+                                    </div>
                                 </div>
-
-                                ${roundText ? `
-                                <div style="color: #ffffff; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; opacity: 0.8;">
-                                    ${roundText}
-                                </div>` : '<div></div>'}
                             </div>
 
                             <!-- Middle Row: Teams & VS -->
