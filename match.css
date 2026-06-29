@@ -209,7 +209,7 @@
 }
 
 .os-ls-logo {
-    width: 44px; height: 44px;
+    width: 48px; height: 48px;
     object-fit: contain;
 }
 
@@ -476,10 +476,10 @@
 }
 .os-lu-tok-photo-wrap {
     position: relative;
-    width: 44px; height: 44px;
+    width: 48px; height: 48px;
 }
 .os-lu-tok-photo {
-    width: 44px; height: 44px;
+    width: 48px; height: 48px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid rgba(255,255,255,0.85);
@@ -491,7 +491,7 @@
         inset 0 -4px 8px rgba(0,0,0,0.35);
 }
 .os-lu-tok-fallback {
-    width: 44px; height: 44px;
+    width: 48px; height: 48px;
     border-radius: 50%;
     background: radial-gradient(circle at 35% 30%, rgba(100,100,120,0.9), rgba(20,20,30,0.95));
     border: 3px solid rgba(255,255,255,0.55);
@@ -666,8 +666,8 @@
 .os-lu-empty { text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.82rem; }
 
 @media (max-width: 480px) {
-    .os-lu-tok-photo, .os-lu-tok-fallback { width: 44px; height: 44px; }
-    .os-lu-tok-photo-wrap { width: 44px; height: 44px; }
+    .os-lu-tok-photo, .os-lu-tok-fallback { width: 48px; height: 48px; }
+    .os-lu-tok-photo-wrap { width: 48px; height: 48px; }
     .os-lu-tok-name { font-size: 0.65rem; max-width: 60px; }
     .os-lu-sw-btn { font-size: 0.7rem; padding: 5px 10px; }
 }
@@ -1607,7 +1607,7 @@
     box-shadow: 0 8px 25px rgba(0,0,0,0.4);
 }
 .os-sf-icon-wrap {
-    width: 44px; height: 44px;
+    width: 48px; height: 48px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -1714,7 +1714,7 @@
             justify-content: space-between;
         }
         .os-hero-logo {
-            width: 44px; height: 44px;
+            width: 48px; height: 48px;
         }
         .os-hero-score {
             font-size: 2rem;
@@ -2288,10 +2288,10 @@
 }
 .os-lu-tok-photo-wrap {
     position: relative;
-    width: 44px; height: 44px;
+    width: 48px; height: 48px;
 }
 .os-lu-tok-photo {
-    width: 44px; height: 44px;
+    width: 48px; height: 48px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid #fff;
@@ -2300,7 +2300,7 @@
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
 }
 .os-lu-tok-fallback {
-    width: 44px; height: 44px;
+    width: 48px; height: 48px;
     border-radius: 50%;
     background: linear-gradient(135deg, #444, #222);
     border: 2px solid #fff;
