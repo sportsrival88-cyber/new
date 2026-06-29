@@ -643,16 +643,14 @@ const OneSportsMatch = (() => {
                 const widgetWrapperHTML = `
                     <style>
                         /* Standings Table overrides */
-                        .standings-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+                        .standings-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 13px; }
                         .standings-table th { text-align: left; padding: 12px 8px; border-bottom: 1px solid var(--glass-border); color: var(--text-muted); font-weight: 500; }
                         .standings-table td { padding: 12px 8px; border-bottom: 1px solid rgba(255,255,255,0.02); text-align: left; vertical-align: middle; }
                         .standings-table tr:hover td { background: rgba(255,255,255,0.03); }
                         .standings-table .team-name { text-align: left; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-                        .qualified-row { background: rgba(12, 247, 55, 0.03) !important; }
-                        .qualified-row td:first-child { border-left: 3px solid #0CF737; }
                     </style>
                     <div id="os-standings-widget" class="glass-card os-standings-container fade-in" style="min-height: auto; padding: 20px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px; border-bottom: 1px solid var(--glass-border); padding-bottom: 8px;">
                             <h3 style="margin: 0; font-family: var(--font-heading); font-size: 1.2rem;"><i class="fas fa-list-ol" style="color: var(--secondary); margin-right: 8px;"></i> Standings</h3>
                         </div>
                         <div style="overflow-x: auto;">
@@ -694,6 +692,7 @@ const OneSportsMatch = (() => {
                     
                     if (data && data.standings && data.standings.length > 0) {
                         Modules.Standings.allRows = data.standings[0].rows || [];
+                        Modules.Standings.destinations = data.standings[0].destinations || [];
                         Modules.Standings.setupGroups();
                         Modules.Standings.renderTable();
                     } else {
@@ -741,7 +740,10 @@ const OneSportsMatch = (() => {
 
                     // Group Divider
                     if (allGroups.length > 1) {
-                        html += `<tr><td colspan="8" style="background:rgba(255,255,255,0.05); font-weight:bold; color:var(--text-main); text-align:left; padding:10px 12px; letter-spacing:0.5px; border-radius:4px;">${Modules.Standings.getGroupName(groupNum)}</td></tr>`;
+                        if (html !== "") {
+                            html += `<tr><td colspan="8" style="height: 15px;"></td></tr>`;
+                        }
+                        html += `<tr><td colspan="8" style="background:rgba(255,255,255,0.06); font-weight:700; color:#fff; text-align:left; padding:10px 15px; font-size:1.05rem; border-left: 3px solid var(--primary); letter-spacing:0.5px;"><i class="fas fa-layer-group" style="color:var(--secondary); margin-right:8px;"></i>${Modules.Standings.getGroupName(groupNum)}</td></tr>`;
                     }
 
                     groupRows.sort((a,b) => a.position - b.position);
@@ -749,15 +751,19 @@ const OneSportsMatch = (() => {
                     groupRows.forEach(row => {
                         const c = row.competitor;
                         const flagUrl = `https://imagecache.365scores.com/image/upload/f_auto,q_auto,w_48/v1/Competitors/${c.id}`;
-                        const isQualified = row.position <= 2;
-                        const rowClass = isQualified ? 'qualified-row' : '';
                         
+                        const dest = Modules.Standings.destinations.find(d => d.num === row.destinationNum);
+                        const destBg = (dest && dest.type === 1) ? `background: rgba(12, 247, 55, 0.025);` : '';
+                        const borderStyle = dest ? `border-left: 3px solid ${dest.color};` : '';
+
                         const isPlaying = (c.id === homeId || c.id === awayId);
-                        const highlightStyle = isPlaying ? 'background: rgba(255,255,255,0.08); font-weight: bold; border-left: 2px solid var(--primary);' : '';
+                        const highlightBg = isPlaying ? 'background: rgba(255,255,255,0.08);' : destBg;
+                        const fontWeight = isPlaying ? 'font-weight: bold;' : '';
+                        const finalBorder = isPlaying ? 'border-left: 3px solid var(--primary);' : borderStyle;
 
                         html += `
-                        <tr class="${rowClass}" style="${highlightStyle}">
-                            <td>${row.position}</td>
+                        <tr style="${highlightBg} ${fontWeight}">
+                            <td style="${finalBorder}">${row.position}</td>
                             <td class="team-name">
                                 <img src="${flagUrl}" width="24" height="24" style="border-radius:50%; object-fit:cover;" alt="${c.name}" loading="lazy">
                                 <span>${c.name}</span>
