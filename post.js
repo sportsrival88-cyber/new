@@ -612,94 +612,161 @@ const OneSportsMatch = (() => {
         },
 
         Standings: {
+            allRows: [],
+            currentGroupNum: 1,
+
+            getGroupName: (num) => {
+                return "Group " + String.fromCharCode(64 + num); // 1->A, 2->B
+            },
+
+            getFormBadges: (recentFormArray) => {
+                if (!recentFormArray) return "";
+                let html = '<div style="display:flex; gap:4px;">';
+                recentFormArray.slice(0, 3).forEach(f => {
+                    let color = '#fff'; let bg = '#666'; let text = '?';
+                    if (f === 1) { text = 'W'; bg = '#0CF737'; color = '#000'; } // Win
+                    else if (f === 3 || f === 0) { text = 'D'; bg = '#4f4f4f'; } // Draw
+                    else { text = 'L'; bg = '#ff4d4d'; } // Loss
+                    html += `<span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:4px; font-size:10px; font-weight:bold; background:${bg}; color:${color};">${text}</span>`;
+                });
+                html += '</div>';
+                return html;
+            },
+
             init: async () => {
                 const container = document.getElementById('onesports-match');
                 const match = window.OneSports.Api.getMatch();
                 
-                if (!container || !match || !match.competition || !match.competition.id) {
-                    window.OneSports.log('Standings Widget aborted: No competition ID found.');
-                    return;
-                }
+                if (!container || !match || !match.competition || !match.competition.id) return;
 
-                // Create the widget wrapper
+                const compId = match.competition.id;
                 const widgetWrapperHTML = `
-                    <div id="os-standings-widget" class="glass-card os-standings-container fade-in" aria-label="Competition Standings">
-                        <div class="os-standings-skeleton">
-                            <div class="os-skeleton-row"></div>
-                            <div class="os-skeleton-row"></div>
-                            <div class="os-skeleton-row"></div>
-                            <div class="os-skeleton-row"></div>
-                            <div class="os-skeleton-row"></div>
+                    <style>
+                        /* Standings Table overrides */
+                        .standings-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+                        .standings-table th { text-align: left; padding: 12px 8px; border-bottom: 1px solid var(--glass-border); color: var(--text-muted); font-weight: 500; }
+                        .standings-table td { padding: 12px 8px; border-bottom: 1px solid rgba(255,255,255,0.02); text-align: left; vertical-align: middle; }
+                        .standings-table tr:hover td { background: rgba(255,255,255,0.03); }
+                        .standings-table .team-name { text-align: left; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+                        .group-selector { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--glass-border); padding: 5px 10px; border-radius: 6px; outline: none; }
+                        .qualified-row { background: rgba(12, 247, 55, 0.03) !important; }
+                        .qualified-row td:first-child { border-left: 3px solid #0CF737; }
+                    </style>
+                    <div id="os-standings-widget" class="glass-card os-standings-container fade-in" style="min-height: auto; padding: 20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+                            <h3 style="margin: 0; font-family: var(--font-heading); font-size: 1.2rem;"><i class="fas fa-list-ol" style="color: var(--secondary); margin-right: 8px;"></i> Standings</h3>
+                            <select class="group-selector" id="os-group-selector" style="display: none;"></select>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table class="standings-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:30px;">#</th>
+                                        <th style="text-align:left;">Team</th>
+                                        <th style="width:30px;" title="Played">P</th>
+                                        <th style="width:30px;" title="Won">W</th>
+                                        <th style="width:30px;" title="Drawn">D</th>
+                                        <th style="width:30px;" title="Lost">L</th>
+                                        <th style="width:40px;" title="Goal Difference">GD</th>
+                                        <th style="width:40px;" title="Points">Pts</th>
+                                        <th style="width:80px;" title="Form">Form</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="os-standings-body">
+                                    <tr><td colspan="9" style="padding:40px;">
+                                        <div class="os-skeleton-row" style="height: 30px; margin-bottom: 10px;"></div>
+                                        <div class="os-skeleton-row" style="height: 30px; margin-bottom: 10px;"></div>
+                                        <div class="os-skeleton-row" style="height: 30px;"></div>
+                                    </td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', widgetWrapperHTML);
 
-                const widgetWrapper = document.getElementById('os-standings-widget');
-                
-                // Lazy Load with Intersection Observer
-                const observer = new IntersectionObserver((entries, obs) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            Modules.Standings.loadIframe(widgetWrapper, match.competition.id);
-                            obs.unobserve(entry.target);
-                        }
-                    });
-                }, { rootMargin: '200px 0px' });
-
-                observer.observe(widgetWrapper);
-                window.OneSports.log('Standings Module initialized (Lazy Loading).');
+                Modules.Standings.loadData(compId);
             },
 
-            loadIframe: (wrapper, compId) => {
-                const isLightMode = document.body.classList.contains('light-mode');
-                const themeParam = isLightMode ? 'light' : 'dark';
-                
-                const iframe = document.createElement('iframe');
-                iframe.src = `https://widget.365scores.com/standings/?competitionId=${compId}&theme=${themeParam}`;
-                iframe.className = 'os-widget-iframe standings-iframe';
-                iframe.title = "Competition Standings";
-                iframe.setAttribute('allowtransparency', 'true');
-
-                let hasLoaded = false;
-
-                iframe.onload = () => {
-                    if (hasLoaded) return;
-                    hasLoaded = true;
-                    const skeleton = wrapper.querySelector('.os-standings-skeleton');
-                    if (skeleton) skeleton.style.display = 'none';
-                    iframe.classList.add('loaded');
-                    window.OneSports.log('365Scores Standings Widget loaded successfully.');
-                };
-
-                iframe.onerror = () => {
-                    if (hasLoaded) return;
-                    hasLoaded = true;
-                    Modules.Standings.renderError(wrapper);
-                };
-
-                // Fallback timeout in case iframe fails silently
-                setTimeout(() => {
-                    if (!hasLoaded) {
-                        hasLoaded = true;
-                        Modules.Standings.renderError(wrapper);
+            loadData: async (compId) => {
+                const url = \`https://webws.365scores.com/web/standings/?appTypeId=5&langId=1&timezoneName=Asia%2FCalcutta&userCountryId=80&competitions=\${compId}&live=false&withSeasonsFilter=true\`;
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const data = await response.json();
+                    
+                    if (data && data.standings && data.standings.length > 0) {
+                        Modules.Standings.allRows = data.standings[0].rows || [];
+                        Modules.Standings.setupGroups();
+                        Modules.Standings.renderTable();
+                    } else {
+                        throw new Error('No standings data');
                     }
-                }, 12000);
-
-                wrapper.appendChild(iframe);
+                } catch (error) {
+                    window.OneSports.log('Failed to load standings API', error, true);
+                    const widget = document.getElementById('os-standings-widget');
+                    if (widget) widget.style.display = 'none';
+                }
             },
 
-            renderError: (wrapper) => {
-                wrapper.innerHTML = `
-                    <div class="os-widget-error">
-                        <i class="fas fa-table" style="font-size: 2.5rem; color: var(--secondary); margin-bottom: 15px;"></i>
-                        <h4 style="font-family: var(--font-heading); margin-bottom: 10px;">Standings Unavailable</h4>
-                        <p style="color: var(--text-muted); font-size: 0.95rem;">Standings are currently unavailable. Please try again later.</p>
-                    </div>
-                `;
-                window.OneSports.log('365Scores Standings Widget failed to load.', null, true);
+            setupGroups: () => {
+                const selector = document.getElementById('os-group-selector');
+                const groups = [...new Set(Modules.Standings.allRows.map(r => r.groupNum || 1))];
+                
+                if (groups.length > 1) {
+                    selector.style.display = 'block';
+                    selector.innerHTML = groups.map(g => \`<option value="\${g}">\${Modules.Standings.getGroupName(g)}</option>\`).join('');
+                    selector.addEventListener('change', (e) => {
+                        Modules.Standings.currentGroupNum = parseInt(e.target.value, 10);
+                        Modules.Standings.renderTable();
+                    });
+                } else {
+                    Modules.Standings.currentGroupNum = groups[0] || 1;
+                }
+            },
+
+            renderTable: () => {
+                const tbody = document.getElementById('os-standings-body');
+                if (!Modules.Standings.allRows.length) return;
+
+                const groupRows = Modules.Standings.allRows.filter(r => (r.groupNum || 1) === Modules.Standings.currentGroupNum);
+                
+                if (groupRows.length === 0) {
+                    tbody.innerHTML = \`<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-muted);">No standings available.</td></tr>\`;
+                    return;
+                }
+
+                groupRows.sort((a,b) => a.position - b.position);
+
+                let html = "";
+                groupRows.forEach(row => {
+                    const c = row.competitor;
+                    const flagUrl = \`https://imagecache.365scores.com/image/upload/f_auto,q_auto,w_48/v1/Competitors/\${c.id}\`;
+                    const isQualified = row.position <= 2;
+                    const rowClass = isQualified ? 'qualified-row' : '';
+
+                    html += \`
+                    <tr class="\${rowClass}">
+                        <td>\${row.position}</td>
+                        <td class="team-name">
+                            <img src="\${flagUrl}" width="24" height="24" style="border-radius:50%; object-fit:cover;" alt="\${c.name}" loading="lazy">
+                            <span>\${c.name}</span>
+                        </td>
+                        <td>\${row.gamePlayed}</td>
+                        <td>\${row.gamesWon}</td>
+                        <td>\${row.gamesEven}</td>
+                        <td>\${row.gamesLost}</td>
+                        <td>\${row.for - row.against > 0 ? '+' : ''}\${row.for - row.against}</td>
+                        <td style="font-weight:bold; color:var(--secondary);">\${row.points}</td>
+                        <td>\${Modules.Standings.getFormBadges(row.recentForm)}</td>
+                    </tr>
+                    \`;
+                });
+
+                tbody.innerHTML = html;
             }
         },
+
         BloggerContent: {
             init: async () => {
                 const container = document.getElementById('onesports-match');
