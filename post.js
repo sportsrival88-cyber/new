@@ -530,42 +530,70 @@ const OneSportsMatch = (() => {
             },
 
             loadIframe: (wrapper) => {
-                const gameId = MATCH_CONFIG.gameId;
+                const match = window.OneSports.Api.getMatch();
+                if (!match || !match.homeTeam || !match.awayTeam || !match.competition) {
+                    return Modules.Widgets.renderError(wrapper);
+                }
+
+                const entityId = `${match.homeTeam.id}-${match.awayTeam.id}-${match.competition.id}`;
                 const isLightMode = document.body.classList.contains('light-mode');
                 const themeParam = isLightMode ? 'light' : 'dark';
                 
-                const iframe = document.createElement('iframe');
-                iframe.src = `https://widget.365scores.com/gamecenter/?gameId=${gameId}&theme=${themeParam}`;
-                iframe.className = 'os-widget-iframe';
-                iframe.title = "Live Match Center";
-                iframe.setAttribute('allowtransparency', 'true');
+                wrapper.innerHTML = `
+                    <style>#powered-by { display: none !important; }</style>
+                    <div style="background: transparent; border-radius: 8px; font-size: 16px; line-height: 1.8; overflow: hidden; min-height: 250px;">
+                        <div data-allow-premium-data="true" 
+                             data-entity-id="${entityId}" 
+                             data-lang="en-US" 
+                             data-support-top-games="true" 
+                             data-theme="${themeParam}" 
+                             data-widget-id="0.fwq61qa3fvf" 
+                             data-widget-type="game">
+                        </div>
+                    </div>
+                `;
 
-                let hasLoaded = false;
+                const domain = "https://widgets.365scores.com/";
+                
+                const fontElement = document.createElement('link');
+                fontElement.setAttribute('rel', "stylesheet");
+                fontElement.setAttribute('href', 'https://fonts.googleapis.com/css?family=Roboto:300,400,500');
+                document.head.appendChild(fontElement);
 
-                iframe.onload = () => {
-                    if (hasLoaded) return;
-                    hasLoaded = true;
-                    const skeleton = wrapper.querySelector('.os-widget-skeleton');
-                    if (skeleton) skeleton.style.display = 'none';
-                    iframe.classList.add('loaded');
-                    window.OneSports.log('365Scores Widget loaded successfully.');
-                };
+                const linkElement = document.createElement('link');
+                linkElement.setAttribute('rel', 'stylesheet');
+                linkElement.setAttribute('href', domain + 'fonts.css');
+                document.head.appendChild(linkElement);
 
-                iframe.onerror = () => {
-                    if (hasLoaded) return;
-                    hasLoaded = true;
-                    Modules.Widgets.renderError(wrapper);
-                };
+                fetch(domain + 'asset-manifest.json')
+                    .then(res => res.json())
+                    .then(assets => {
+                        const jsFiles = assets.entrypoints.filter(asset => asset.includes('static/js'));
+                        const cssFiles = assets.entrypoints.filter(asset => asset.includes('static/css'));
 
-                // Fallback timeout in case iframe fails silently
-                setTimeout(() => {
-                    if (!hasLoaded) {
-                        hasLoaded = true;
+                        if (cssFiles && cssFiles.length > 0) {
+                            cssFiles.forEach(src => {
+                                const element = document.createElement('link');
+                                element.setAttribute('href', domain + src);
+                                element.setAttribute('rel', 'stylesheet');
+                                document.head.appendChild(element);
+                            });
+                        }
+
+                        if (jsFiles && jsFiles.length > 0) {
+                            jsFiles.forEach(src => {
+                                const element = document.createElement('script');
+                                element.setAttribute('src', domain + src);
+                                document.head.appendChild(element);
+                            });
+                        }
+                        
+                        window.OneSports.log('365Scores React Widget injected successfully.');
+                    })
+                    .catch(err => {
+                        window.OneSports.log('Failed to fetch 365scores asset manifest', err, true);
                         Modules.Widgets.renderError(wrapper);
-                    }
-                }, 12000);
-
-                wrapper.appendChild(iframe);
+                    });
             },
 
             renderError: (wrapper) => {
