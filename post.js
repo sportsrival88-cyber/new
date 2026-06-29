@@ -689,7 +689,7 @@ const OneSportsMatch = (() => {
             },
 
             loadData: async (compId) => {
-                const url = \`https://webws.365scores.com/web/standings/?appTypeId=5&langId=1&timezoneName=Asia%2FCalcutta&userCountryId=80&competitions=\${compId}&live=false&withSeasonsFilter=true\`;
+                const url = `https://webws.365scores.com/web/standings/?appTypeId=5&langId=1&timezoneName=Asia%2FCalcutta&userCountryId=80&competitions=${compId}&live=false&withSeasonsFilter=true`;
                 try {
                     const response = await fetch(url);
                     if (!response.ok) throw new Error('Network response was not ok');
@@ -715,7 +715,7 @@ const OneSportsMatch = (() => {
                 
                 if (groups.length > 1) {
                     selector.style.display = 'block';
-                    selector.innerHTML = groups.map(g => \`<option value="\${g}">\${Modules.Standings.getGroupName(g)}</option>\`).join('');
+                    selector.innerHTML = groups.map(g => `<option value="${g}">${Modules.Standings.getGroupName(g)}</option>`).join('');
                     selector.addEventListener('change', (e) => {
                         Modules.Standings.currentGroupNum = parseInt(e.target.value, 10);
                         Modules.Standings.renderTable();
@@ -732,7 +732,7 @@ const OneSportsMatch = (() => {
                 const groupRows = Modules.Standings.allRows.filter(r => (r.groupNum || 1) === Modules.Standings.currentGroupNum);
                 
                 if (groupRows.length === 0) {
-                    tbody.innerHTML = \`<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-muted);">No standings available.</td></tr>\`;
+                    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-muted);">No standings available.</td></tr>`;
                     return;
                 }
 
@@ -741,26 +741,26 @@ const OneSportsMatch = (() => {
                 let html = "";
                 groupRows.forEach(row => {
                     const c = row.competitor;
-                    const flagUrl = \`https://imagecache.365scores.com/image/upload/f_auto,q_auto,w_48/v1/Competitors/\${c.id}\`;
+                    const flagUrl = `https://imagecache.365scores.com/image/upload/f_auto,q_auto,w_48/v1/Competitors/${c.id}`;
                     const isQualified = row.position <= 2;
                     const rowClass = isQualified ? 'qualified-row' : '';
 
-                    html += \`
-                    <tr class="\${rowClass}">
-                        <td>\${row.position}</td>
+                    html += `
+                    <tr class="${rowClass}">
+                        <td>${row.position}</td>
                         <td class="team-name">
-                            <img src="\${flagUrl}" width="24" height="24" style="border-radius:50%; object-fit:cover;" alt="\${c.name}" loading="lazy">
-                            <span>\${c.name}</span>
+                            <img src="${flagUrl}" width="24" height="24" style="border-radius:50%; object-fit:cover;" alt="${c.name}" loading="lazy">
+                            <span>${c.name}</span>
                         </td>
-                        <td>\${row.gamePlayed}</td>
-                        <td>\${row.gamesWon}</td>
-                        <td>\${row.gamesEven}</td>
-                        <td>\${row.gamesLost}</td>
-                        <td>\${row.for - row.against > 0 ? '+' : ''}\${row.for - row.against}</td>
-                        <td style="font-weight:bold; color:var(--secondary);">\${row.points}</td>
-                        <td>\${Modules.Standings.getFormBadges(row.recentForm)}</td>
+                        <td>${row.gamePlayed}</td>
+                        <td>${row.gamesWon}</td>
+                        <td>${row.gamesEven}</td>
+                        <td>${row.gamesLost}</td>
+                        <td>${row.for - row.against > 0 ? '+' : ''}${row.for - row.against}</td>
+                        <td style="font-weight:bold; color:var(--secondary);">${row.points}</td>
+                        <td>${Modules.Standings.getFormBadges(row.recentForm)}</td>
                     </tr>
-                    \`;
+                    `;
                 });
 
                 tbody.innerHTML = html;
