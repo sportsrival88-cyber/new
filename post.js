@@ -330,8 +330,8 @@ const OneSportsMatch = (() => {
                 const posterUrl = MATCH_CONFIG.poster || 'https://placehold.co/1200x675/1a1a24/ffffff?text=OneSports+Live';
 
                 const html = `
-                    <div class="os-poster-container fade-in">
-                        <img src="${posterUrl}" alt="${altText}" class="os-poster-image" loading="lazy">
+                    <div class="os-poster-container fade-in" style="width: 100%; aspect-ratio: 16/9; max-height: 450px; border-radius: 16px; overflow: hidden; position: relative; margin-bottom: 30px; background: rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                        <img src="${posterUrl}" alt="${altText}" class="os-poster-image" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; display: block;">
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', html);
