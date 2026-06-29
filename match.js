@@ -850,7 +850,7 @@ const MatchRenderer = {
 
             // z-index: players near viewer (high y%) appear on top
             const zIdx = Math.round(pos.y);
-            const ratingHtml = p.ranking ? \`<div class="os-lu-tok-ranking" style="background-color:${p.ranking >= 8 ? '#4caf50' : (p.ranking >= 7 ? '#ff9800' : '#ff9800')}">${Number(p.ranking).toFixed(1)}</div>\` : '';
+            const ratingHtml = p.ranking ? `<div class="os-lu-tok-ranking" style="background-color:${p.ranking >= 8 ? '#4caf50' : (p.ranking >= 7 ? '#ff9800' : '#ff9800')}">${Number(p.ranking).toFixed(1)}</div>` : '';
 
             const evIcons = [];
             if (p.playerEvs.includes('goal'))   evIcons.push('<i class="fas fa-futbol os-lu-ev-goal"></i>');
