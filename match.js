@@ -890,7 +890,6 @@ const MatchRenderer = {
                     ${p.num ? `<div class="os-lu-tok-num-badge">${p.num}</div>` : ''}
                     ${p.isCap ? '<div class="os-lu-tok-cap">C</div>' : ''}
                     ${evHtml}
-                    ${ratingHtml}
                 </div>
                 <div class="os-lu-tok-name">${displayName}</div>
             </div>`;
@@ -1886,6 +1885,19 @@ const MatchRenderer = {
         grid.innerHTML = html;
     },
 
+    initPopularPosts() {
+        const container = this.elements['os-popular-posts'];
+        if (!container) return;
+        container.innerHTML = `
+            <div class="os-h2h-container">
+                <div class="os-mi-header">Popular Posts</div>
+                <div class="os-popular-posts-body" style="padding: 16px; color: var(--text-muted); text-align: center;">
+                    <!-- Blogger Widget Placeholder -->
+                </div>
+            </div>
+        `;
+    },
+
     renderSocialFeed() {
         const container = this.elements['os-social-feed'];
         if (!container) return;
@@ -2602,6 +2614,7 @@ const MatchArticleController = {
         MatchRenderer.renderMatchPhoto();
         MatchRenderer.renderBroadcastLink();
         MatchRenderer.renderSocialFeed();
+        MatchRenderer.initPopularPosts();
 
         // Init Observers for lazy loading
         MatchObservers.init();
