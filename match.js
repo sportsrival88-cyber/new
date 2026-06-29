@@ -1905,6 +1905,1361 @@ const MatchRenderer = {
         const tg = MatchStore.metadata.socials.telegram;
         const wa = MatchStore.metadata.socials.whatsapp;
 
+        const tgBtn = tg ? `<a href="${tg}" target="_blank" class="os-sf-btn tg-btn" style="display: block; padding: 14px; font-size: 1rem; border-radius: 8px;"><i class="fab fa-telegram-plane" style="margin-right:8px;font-size:1.2rem;vertical-align:middle;"></i> <span style="vertical-align:middle;">Join Official Telegram</span></a>` 
+                         : `<button class="os-sf-btn disabled" disabled style="display: block; padding: 14px; font-size: 1rem; border-radius: 8px;">Telegram Coming Soon</button>`;
+
+        const waBtn = wa ? `<a href="${wa}" target="_blank" class="os-sf-btn wa-btn" style="display: block; padding: 14px; font-size: 1rem; border-radius: 8px;"><i class="fab fa-whatsapp" style="margin-right:8px;font-size:1.2rem;vertical-align:middle;"></i> <span style="vertical-align:middle;">Join Official WhatsApp</span></a>` 
+                         : `<button class="os-sf-btn disabled" disabled style="display: block; padding: 14px; font-size: 1rem; border-radius: 8px;">WhatsApp Coming Soon</button>`;
+
+        container.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+                ${tgBtn}
+                ${waBtn}
+            </div>
+        `;
+    },
+
+    renderMatchH2H(data) {
+        const container = this.elements['os-match-h2h'];
+        if (!container) return;
+        
+        const game = data.game;
+        let h2hData = data.previousMeetings || game.previousMeetings;
+
+        if (!h2hData && game.hasPreviousMeetings) {
+            container.innerHTML = `
+                <div class="os-mi-header">Head to Head</div>
+                <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            `;
+            const url = `https://webws.365scores.com/web/game/previousmeetings/?appTypeId=5&langId=1&timezoneName=Asia%2FCalcutta&userCountryId=80&gameId=${MatchStore.metadata.matchId}`;
+            API.fetchJSON(url).then(fetched => {
+                if (fetched && fetched.previousMeetings) {
+                    this.buildH2HContent(container, game, fetched.previousMeetings, data.competitions);
+                } else {
+                    this.renderMatchH2HError();
+                }
+            }).catch(e => {
+                console.error("H2H fetch error", e);
+                this.renderMatchH2HError();
+            });
+        } else if (h2hData) {
+            this.buildH2HContent(container, game, h2hData, data.competitions);
+        } else {
+            container.innerHTML = `
+                <div class="os-mi-header">Head to Head</div>
+                <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                    No previous meetings found.
+                </div>
+            `;
+        }
+    },
+
+    buildH2HContent(container, game, h2hData, competitions) {
+        if (!h2hData || !Array.isArray(h2hData) || h2hData.length === 0) {
+            container.innerHTML = `
+                <div class="os-mi-header">Head to Head</div>
+                <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                    No previous meetings found.
+                </div>
+            `;
+            return;
+        }
+
+        const totalMatches = h2hData.length;
+        let homeWins = 0;
+        let awayWins = 0;
+        let draws = 0;
+
+        const homeId = game.homeCompetitor.id;
+        const awayId = game.awayCompetitor.id;
+        const homeName = Security.escapeHTML(game.homeCompetitor.name);
+        const awayName = Security.escapeHTML(game.awayCompetitor.name);
+
+        const recentMatches = h2hData.slice(0, 5);
+        let recentHtml = '';
+
+        h2hData.forEach(match => {
+            let hScore = -1, aScore = -1;
+            let matchHomeId = -1, matchAwayId = -1;
+            
+            if (match.homeCompetitor) {
+                matchHomeId = match.homeCompetitor.id;
+                hScore = match.homeCompetitor.score !== undefined ? match.homeCompetitor.score : -1;
+            }
+            if (match.awayCompetitor) {
+                matchAwayId = match.awayCompetitor.id;
+                aScore = match.awayCompetitor.score !== undefined ? match.awayCompetitor.score : -1;
+            }
+
+            if (hScore !== -1 && aScore !== -1) {
+                if (hScore === aScore) {
+                    draws++;
+                } else if (hScore > aScore) {
+                    if (matchHomeId === homeId) homeWins++;
+                    else awayWins++;
+                } else {
+                    if (matchAwayId === homeId) homeWins++;
+                    else awayWins++;
+                }
+            }
+        });
+
+        recentMatches.forEach(match => {
+            let hScore = match.homeCompetitor?.score !== undefined ? match.homeCompetitor.score : '-';
+            let aScore = match.awayCompetitor?.score !== undefined ? match.awayCompetitor.score : '-';
+            
+            let hName = match.homeCompetitor?.name || "Home";
+            let aName = match.awayCompetitor?.name || "Away";
+
+            let hWinnerClass = '';
+            let aWinnerClass = '';
+            
+            if (hScore !== '-' && aScore !== '-') {
+                if (hScore > aScore) hWinnerClass = 'winner';
+                else if (aScore > hScore) aWinnerClass = 'winner';
+            }
+            
+            let compName = "";
+            if (match.competitionId && competitions) {
+                const comp = competitions.find(c => c.id === match.competitionId);
+                if (comp) compName = comp.name;
+            }
+            if (!compName && match.competitionDisplayName) compName = match.competitionDisplayName;
+            
+            const dateStr = match.startTime ? Helpers.formatDate(match.startTime) : "";
+            let statusStr = match.shortStatusText || match.statusText || "FT";
+            
+            recentHtml += `
+                <div class="os-h2h-recent-row">
+                    <div class="os-h2h-recent-meta">
+                        <span class="os-h2h-comp">${compName}</span>
+                        <span class="os-h2h-date">${dateStr}</span>
+                        <span class="os-h2h-status">${statusStr}</span>
+                    </div>
+                    <div class="os-h2h-recent-teams">
+                        <div class="os-h2h-team home ${hWinnerClass}">${hName}</div>
+                        <div class="os-h2h-score">${hScore} - ${aScore}</div>
+                        <div class="os-h2h-team away ${aWinnerClass}">${aName}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        let homePct = 0, awayPct = 0, drawPct = 0;
+        if (totalMatches > 0) {
+            homePct = (homeWins / totalMatches) * 100;
+            drawPct = (draws / totalMatches) * 100;
+            awayPct = (awayWins / totalMatches) * 100;
+        }
+
+        container.innerHTML = `
+            <div class="os-h2h-container">
+                <div class="os-mi-header">Head to Head</div>
+                
+                <div class="os-h2h-summary">
+                    <div class="os-h2h-total-badge">
+                        <span class="os-h2h-total-num">${totalMatches}</span>
+                        <span class="os-h2h-total-lbl">Matches</span>
+                    </div>
+                </div>
+
+                <div class="os-h2h-comparison">
+                    <div class="os-h2h-comp-labels">
+                        <div class="os-h2h-comp-lbl">
+                            <span class="os-h2h-comp-name">${homeName}</span>
+                            <span class="os-h2h-comp-val">${homeWins}</span>
+                        </div>
+                        <div class="os-h2h-comp-lbl center">
+                            <span class="os-h2h-comp-name">Draws</span>
+                            <span class="os-h2h-comp-val">${draws}</span>
+                        </div>
+                        <div class="os-h2h-comp-lbl right">
+                            <span class="os-h2h-comp-name">${awayName}</span>
+                            <span class="os-h2h-comp-val">${awayWins}</span>
+                        </div>
+                    </div>
+                    <div class="os-h2h-comp-bar">
+                        <div class="os-h2h-bar-segment home" style="width: ${homePct}%"></div>
+                        <div class="os-h2h-bar-segment draw" style="width: ${drawPct}%"></div>
+                        <div class="os-h2h-bar-segment away" style="width: ${awayPct}%"></div>
+                    </div>
+                </div>
+
+                <div class="os-h2h-recent-title">Recent Meetings</div>
+                <div class="os-h2h-recent-list">
+                    ${recentHtml}
+                </div>
+            </div>
+        `;
+    },
+
+    renderMatchRecentFormError() {
+        const container = this.elements['os-recent-form'];
+        if (!container) return;
+        container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">Unable to load recent form.</div>`;
+    },
+
+    renderMatchRecentForm(data) {
+        const container = this.elements['os-recent-form'];
+        if (!container) return;
+        
+        const game = data.game;
+        const hc = game.homeCompetitor;
+        const ac = game.awayCompetitor;
+        
+        let hRecent = hc.recentMatches || [];
+        let aRecent = ac.recentMatches || [];
+        
+        if (!hRecent.length && !aRecent.length) {
+            if (data.recentMatches && data.recentMatches.homeCompetitorMatches) {
+                hRecent = data.recentMatches.homeCompetitorMatches;
+                aRecent = data.recentMatches.awayCompetitorMatches;
+            } else if (data.homeCompetitorMatches) {
+                hRecent = data.homeCompetitorMatches;
+                aRecent = data.awayCompetitorMatches;
+            }
+        }
+        
+        const homeData = this.calculateFormStats(hRecent, hc.id, data.competitions);
+        const awayData = this.calculateFormStats(aRecent, ac.id, data.competitions);
+        
+        container.innerHTML = `
+            <div class="os-rf-container">
+                <div class="os-mi-header">Recent Form</div>
+                <div class="os-rf-panels">
+                    <div class="os-rf-panel home-panel">
+                        <div class="os-rf-panel-header">
+                            <img src="${Helpers.getLogoUrl(hc.id, hc.imageVersion)}" alt="${hc.name}" class="os-rf-logo" width="40" height="40" loading="lazy" decoding="async">
+                            <span class="os-rf-team-name">${hc.name}</span>
+                        </div>
+                        <div class="os-rf-rating ${homeData.ratingClass}">${homeData.ratingStr} Form</div>
+                        
+                        <div class="os-rf-form-badges">
+                            ${homeData.badgesHtml}
+                        </div>
+                        
+                        <div class="os-rf-summary-grid">
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.w}</span>
+                                <span class="os-rf-sum-lbl">Wins</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.d}</span>
+                                <span class="os-rf-sum-lbl">Draws</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.l}</span>
+                                <span class="os-rf-sum-lbl">Losses</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.gf}</span>
+                                <span class="os-rf-sum-lbl">Goals For</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.ga}</span>
+                                <span class="os-rf-sum-lbl">Goals Agst</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.cs}</span>
+                                <span class="os-rf-sum-lbl">Clean Sheets</span>
+                            </div>
+                            <div class="os-rf-sum-item full-width">
+                                <span class="os-rf-sum-val">${homeData.avgGoals}</span>
+                                <span class="os-rf-sum-lbl">Avg Goals/Match</span>
+                            </div>
+                        </div>
+
+                        <div class="os-rf-matches-list">
+                            ${homeData.matchesHtml}
+                        </div>
+                    </div>
+                    
+                    <div class="os-rf-panel away-panel">
+                        <div class="os-rf-panel-header">
+                            <img src="${Helpers.getLogoUrl(ac.id, ac.imageVersion)}" alt="${ac.name}" class="os-rf-logo" width="40" height="40" loading="lazy" decoding="async">
+                            <span class="os-rf-team-name">${ac.name}</span>
+                        </div>
+                        <div class="os-rf-rating ${awayData.ratingClass}">${awayData.ratingStr} Form</div>
+                        
+                        <div class="os-rf-form-badges">
+                            ${awayData.badgesHtml}
+                        </div>
+                        
+                        <div class="os-rf-summary-grid">
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.w}</span>
+                                <span class="os-rf-sum-lbl">Wins</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.d}</span>
+                                <span class="os-rf-sum-lbl">Draws</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.l}</span>
+                                <span class="os-rf-sum-lbl">Losses</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.gf}</span>
+                                <span class="os-rf-sum-lbl">Goals For</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.ga}</span>
+                                <span class="os-rf-sum-lbl">Goals Agst</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.cs}</span>
+                                <span class="os-rf-sum-lbl">Clean Sheets</span>
+                            </div>
+                            <div class="os-rf-sum-item full-width">
+                                <span class="os-rf-sum-val">${awayData.avgGoals}</span>
+                                <span class="os-rf-sum-lbl">Avg Goals/Match</span>
+                            </div>
+                        </div>
+
+                        <div class="os-rf-matches-list">
+                            ${awayData.matchesHtml}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    calculateFormStats(recentMatches, mainTeamId, competitions) {
+        let w = 0, d = 0, l = 0;
+        let gf = 0, ga = 0;
+        let cs = 0;
+        let badgesHtml = '';
+        let matchesHtml = '';
+        
+        let validMatches = 0;
+        
+        const matches = (recentMatches || []).slice(0, 5);
+        
+        matches.forEach(match => {
+            const isHome = match.homeCompetitor && match.homeCompetitor.id === mainTeamId;
+            const mainComp = isHome ? match.homeCompetitor : match.awayCompetitor;
+            const oppComp = isHome ? match.awayCompetitor : match.homeCompetitor;
+            
+            if (!mainComp || !oppComp) return;
+            
+            const mainScore = mainComp.score !== undefined ? mainComp.score : -1;
+            const oppScore = oppComp.score !== undefined ? oppComp.score : -1;
+            
+            let resultChar = '-';
+            let badgeClass = 'none';
+            
+            if (mainScore !== -1 && oppScore !== -1) {
+                validMatches++;
+                gf += mainScore;
+                ga += oppScore;
+                if (oppScore === 0) cs++;
+                
+                if (mainScore > oppScore) {
+                    w++;
+                    resultChar = 'W';
+                    badgeClass = 'win';
+                } else if (mainScore < oppScore) {
+                    l++;
+                    resultChar = 'L';
+                    badgeClass = 'loss';
+                } else {
+                    d++;
+                    resultChar = 'D';
+                    badgeClass = 'draw';
+                }
+            }
+            
+            badgesHtml += `<span class="os-rf-badge ${badgeClass}">${resultChar}</span>`;
+            
+            let compName = "";
+            if (match.competitionId && competitions) {
+                const comp = competitions.find(c => c.id === match.competitionId);
+                if (comp) compName = comp.name;
+            }
+            if (!compName && match.competitionDisplayName) compName = match.competitionDisplayName;
+            
+            const dateStr = match.startTime ? Helpers.formatDate(match.startTime) : "";
+            const oppName = oppComp.name;
+            const homeAwayIndicator = isHome ? "(H)" : "(A)";
+            const finalScore = mainScore !== -1 ? (isHome ? `${mainScore} - ${oppScore}` : `${oppScore} - ${mainScore}`) : "v";
+            
+            matchesHtml += `
+                <div class="os-rf-match-row">
+                    <div class="os-rf-match-meta">
+                        <span class="os-rf-comp">${compName}</span>
+                        <span class="os-rf-date">${dateStr}</span>
+                    </div>
+                    <div class="os-rf-match-main">
+                        <div class="os-rf-opp">${oppName} <span class="os-rf-ha">${homeAwayIndicator}</span></div>
+                        <div class="os-rf-mscore ${badgeClass}">${finalScore}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        let avgGoals = "0.00";
+        if (validMatches > 0) {
+            avgGoals = (gf / validMatches).toFixed(2);
+        }
+        
+        let ratingStr = "Unknown";
+        let ratingClass = "none";
+        
+        if (validMatches > 0) {
+            const pts = (w * 3) + (d * 1);
+            const maxPts = validMatches * 3;
+            const pct = pts / maxPts;
+            
+            if (pct >= 0.7) {
+                ratingStr = "Excellent";
+                ratingClass = "excellent";
+            } else if (pct >= 0.5) {
+                ratingStr = "Good";
+                ratingClass = "good";
+            } else if (pct >= 0.3) {
+                ratingStr = "Average";
+                ratingClass = "average";
+            } else {
+                ratingStr = "Poor";
+                ratingClass = "poor";
+            }
+        }
+        
+        return {
+            w, d, l, gf, ga, cs, avgGoals,
+            badgesHtml, matchesHtml,
+            ratingStr, ratingClass
+        };
+    },
+
+    initMatchStandings() {
+        const container = this.elements['os-group-standings'];
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="os-st-container">
+                <div class="os-mi-header">Standings</div>
+                <div class="os-st-table-wrapper" id="os-st-wrapper">
+                    <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    renderMatchStandingsError() {
+        const container = this.elements['os-group-standings'];
+        if (!container) return;
+        container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">Standings currently unavailable.</div>`;
+    },
+
+    renderMatchStandings(standingsData) {
+        const container = this.elements['os-group-standings'];
+        if (!container || !MatchStore.game?.game) return;
+        
+        if (MatchStore.game.game.hasStandings === false) {
+            container.style.display = 'none';
+            return;
+        }
+
+        if (standingsData) {
+            this.buildStandingsContent(MatchStore.game.game, standingsData);
+        } else {
+            this.renderMatchStandingsError();
+        }
+    },
+
+    buildStandingsContent(game, standingsObj) {
+        const container = MatchRenderer.elements['os-group-standings'];
+        if (!container) return;
+
+        if (!standingsObj.rows || standingsObj.rows.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        const homeId = game.homeCompetitor.id;
+        const awayId = game.awayCompetitor.id;
+
+        // Find which group each team belongs to
+        const homeRow = standingsObj.rows.find(r => r.competitor && r.competitor.id === homeId);
+        const awayRow = standingsObj.rows.find(r => r.competitor && r.competitor.id === awayId);
+
+        if (!homeRow && !awayRow) {
+            container.style.display = 'none';
+            return;
+        }
+
+        const homeGroupNum = homeRow ? homeRow.groupNum : null;
+        const awayGroupNum = awayRow ? awayRow.groupNum : null;
+        const sameGroup = homeGroupNum !== null && homeGroupNum === awayGroupNum;
+
+        const getGroupName = (groupNum) => {
+            if (!groupNum || !standingsObj.groups) return '';
+            const g = standingsObj.groups.find(g => g.num === groupNum);
+            return g ? Security.escapeHTML(g.name) : '';
+        };
+
+        const getDestinationColors = () => {
+            const destColors = {};
+            if (standingsObj.destinations) {
+                standingsObj.destinations.forEach(d => { destColors[d.num] = d.color; });
+            }
+            return destColors;
+        };
+        const destColors = getDestinationColors();
+
+        const buildGroupTable = (groupNum, highlightIds) => {
+            const groupRows = standingsObj.rows
+                .filter(r => r.groupNum === groupNum)
+                .sort((a, b) => a.position - b.position);
+            const groupName = getGroupName(groupNum);
+
+            let rowsHtml = '';
+            groupRows.forEach(row => {
+                const comp = row.competitor;
+                const isHighlight = highlightIds.includes(comp.id) ? 'highlight' : '';
+
+                const borderColor = row.destinationNum && destColors[row.destinationNum]
+                    ? destColors[row.destinationNum]
+                    : 'transparent';
+
+                let formHtml = '';
+                if (row.recentForm && row.recentForm.length > 0) {
+                    row.recentForm.slice(-5).forEach(f => {
+                        let fClass = 'loss', fChar = 'L';
+                        if (f === 1) { fClass = 'win'; fChar = 'W'; }
+                        else if (f === 2) { fClass = 'draw'; fChar = 'D'; }
+                        formHtml += `<span class="os-st-form-badge ${fClass}">${fChar}</span>`;
+                    });
+                }
+
+                rowsHtml += `
+                    <div class="os-st-row ${isHighlight}" id="os-st-row-${comp.id}" data-pos="${row.position}" style="border-left: 4px solid ${borderColor};">
+                        <div class="os-st-col pos" data-field="pos">${row.position}</div>
+                        <div class="os-st-col team">
+                            <img src="${Helpers.getLogoUrl(comp.id, comp.imageVersion)}" alt="${Security.escapeHTML(comp.name)}" class="os-st-logo" width="24" height="24" loading="lazy" decoding="async">
+                            <span class="os-st-team-name">${Security.escapeHTML(comp.name)}</span>
+                        </div>
+                        <div class="os-st-col" data-field="played">${row.gamePlayed}</div>
+                        <div class="os-st-col hide-mobile" data-field="won">${row.gamesWon}</div>
+                        <div class="os-st-col hide-mobile" data-field="drawn">${row.gamesEven}</div>
+                        <div class="os-st-col hide-mobile" data-field="lost">${row.gamesLost}</div>
+                        <div class="os-st-col hide-mobile" data-field="goals">${row.for}:${row.against}</div>
+                        <div class="os-st-col" data-field="gd">${row.ratio > 0 ? '+' : ''}${row.ratio}</div>
+                        <div class="os-st-col pts" data-field="pts">${row.points}</div>
+                        <div class="os-st-col form hide-mobile">${formHtml}</div>
+                    </div>
+                `;
+            });
+
+            return `
+                <div class="os-st-group-block">
+                    <div class="os-st-group-header">
+                        <span class="os-st-group-title">${groupName}</span>
+                    </div>
+                    <div class="os-st-table">
+                        <div class="os-st-header-row">
+                            <div class="os-st-col pos">Pos</div>
+                            <div class="os-st-col team">Country</div>
+                            <div class="os-st-col">P</div>
+                            <div class="os-st-col hide-mobile">W</div>
+                            <div class="os-st-col hide-mobile">D</div>
+                            <div class="os-st-col hide-mobile">L</div>
+                            <div class="os-st-col hide-mobile">Goals</div>
+                            <div class="os-st-col">GD</div>
+                            <div class="os-st-col pts">Pts</div>
+                            <div class="os-st-col form hide-mobile">Form</div>
+                        </div>
+                        <div class="os-st-body">
+                            ${rowsHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        let innerHtml = '';
+        if (sameGroup) {
+            // Same group: show one table with both highlighted
+            innerHtml = `<div class="os-st-tables-stack">${buildGroupTable(homeGroupNum, [homeId, awayId])}</div>`;
+        } else {
+            // Different groups: show two tables side-by-side
+            const homeTableHtml = homeGroupNum ? buildGroupTable(homeGroupNum, [homeId]) : '';
+            const awayTableHtml = awayGroupNum ? buildGroupTable(awayGroupNum, [awayId]) : '';
+            innerHtml = `
+                <div class="os-st-tables-stack">
+                    ${homeTableHtml}
+                    ${awayTableHtml}
+                </div>
+            `;
+        }
+
+        const displayName = 'Group Standings';
+        container.innerHTML = `
+            <div class="os-st-container">
+                <div class="os-mi-header">${displayName}</div>
+                ${innerHtml}
+            </div>
+        `;
+    },
+
+        initRelatedMatches() {
+        const container = this.elements['os-related-matches'];
+        if (!container) return;
+        
+        let skeletonHtml = '';
+        for(let i=0; i<3; i++) {
+            skeletonHtml += `
+                <div class="os-rm-card skeleton">
+                    <div class="os-rm-card-hero"></div>
+                    <div class="os-rm-card-content">
+                        <div class="os-rm-card-comp"></div>
+                        <div class="os-rm-card-title"></div>
+                        <div class="os-rm-card-teams">
+                            <div class="os-rm-card-team"></div>
+                            <div class="os-rm-card-team"></div>
+                        </div>
+                        <div class="os-rm-card-meta"></div>
+                        <div class="os-rm-card-btn"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = `
+            <div class="os-rm-container">
+                <div class="os-mi-header">Related Matches</div>
+                <div class="os-rm-grid" id="os-rm-grid">
+                    ${skeletonHtml}
+                </div>
+            </div>
+        `;
+    },
+
+    async fetchRelatedMatches(gameData) {
+        // Future logic for Blogger Feed API integration matching competition/date
+        // We will cache this request via API helper when fully implemented
+        return [];
+    },
+
+    renderRelatedMatches(matches) {
+        const container = this.elements['os-related-matches'];
+        const grid = document.getElementById('os-rm-grid');
+        if (!container || !grid) return;
+
+        if (!matches || matches.length === 0) {
+            grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 40px 20px; color: var(--text-muted); font-family: var(--font-main);">No related matches available.</div>`;
+            return;
+        }
+
+        let html = '';
+        grid.innerHTML = html;
+    },
+
+    initPopularPosts() {
+        const container = this.elements['os-popular-posts'];
+        if (!container) return;
+        container.innerHTML = `
+            <div class="os-h2h-container">
+                <div class="os-mi-header">Popular Posts</div>
+                <div class="os-popular-posts-body" style="padding: 16px; color: var(--text-muted); text-align: center;">
+                    <!-- Blogger Widget Placeholder -->
+                </div>
+            </div>
+        `;
+    },
+
+    renderSocialFeed() {
+        const container = this.elements['os-social-feed'];
+        if (!container) return;
+
+        const tg = MatchStore.metadata.socials.telegram;
+        const wa = MatchStore.metadata.socials.whatsapp;
+
+        const tgBtn = tg ? `<a href="${tg}" target="_blank" class="os-sf-btn tg-btn" style="display: block; padding: 14px; font-size: 1rem; border-radius: 8px;"><i class="fab fa-telegram-plane" style="margin-right:8px;font-size:1.2rem;vertical-align:middle;"></i> <span style="vertical-align:middle;">Join Official Telegram</span></a>` 
+                         : `<button class="os-sf-btn disabled" disabled style="display: block; padding: 14px; font-size: 1rem; border-radius: 8px;">Telegram Coming Soon</button>`;
+
+        const waBtn = wa ? `<a href="${wa}" target="_blank" class="os-sf-btn wa-btn" style="display: block; padding: 14px; font-size: 1rem; border-radius: 8px;"><i class="fab fa-whatsapp" style="margin-right:8px;font-size:1.2rem;vertical-align:middle;"></i> <span style="vertical-align:middle;">Join Official WhatsApp</span></a>` 
+                         : `<button class="os-sf-btn disabled" disabled style="display: block; padding: 14px; font-size: 1rem; border-radius: 8px;">WhatsApp Coming Soon</button>`;
+
+        container.innerHTML = `
+            <div class="os-sf-container">
+                <div class="os-mi-header">Join Our Community</div>
+                <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+                    ${tgBtn}
+                    ${waBtn}
+                </div>
+            </div>
+        `;
+    },
+
+    renderMatchH2H(data) {
+        const container = this.elements['os-match-h2h'];
+        if (!container) return;
+        
+        const game = data.game;
+        let h2hData = data.previousMeetings || game.previousMeetings;
+
+        if (!h2hData && game.hasPreviousMeetings) {
+            container.innerHTML = `
+                <div class="os-mi-header">Head to Head</div>
+                <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            `;
+            const url = `https://webws.365scores.com/web/game/previousmeetings/?appTypeId=5&langId=1&timezoneName=Asia%2FCalcutta&userCountryId=80&gameId=${MatchStore.metadata.matchId}`;
+            API.fetchJSON(url).then(fetched => {
+                if (fetched && fetched.previousMeetings) {
+                    this.buildH2HContent(container, game, fetched.previousMeetings, data.competitions);
+                } else {
+                    this.renderMatchH2HError();
+                }
+            }).catch(e => {
+                console.error("H2H fetch error", e);
+                this.renderMatchH2HError();
+            });
+        } else if (h2hData) {
+            this.buildH2HContent(container, game, h2hData, data.competitions);
+        } else {
+            container.innerHTML = `
+                <div class="os-mi-header">Head to Head</div>
+                <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                    No previous meetings found.
+                </div>
+            `;
+        }
+    },
+
+    buildH2HContent(container, game, h2hData, competitions) {
+        if (!h2hData || !Array.isArray(h2hData) || h2hData.length === 0) {
+            container.innerHTML = `
+                <div class="os-mi-header">Head to Head</div>
+                <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                    No previous meetings found.
+                </div>
+            `;
+            return;
+        }
+
+        const totalMatches = h2hData.length;
+        let homeWins = 0;
+        let awayWins = 0;
+        let draws = 0;
+
+        const homeId = game.homeCompetitor.id;
+        const awayId = game.awayCompetitor.id;
+        const homeName = Security.escapeHTML(game.homeCompetitor.name);
+        const awayName = Security.escapeHTML(game.awayCompetitor.name);
+
+        const recentMatches = h2hData.slice(0, 5);
+        let recentHtml = '';
+
+        h2hData.forEach(match => {
+            let hScore = -1, aScore = -1;
+            let matchHomeId = -1, matchAwayId = -1;
+            
+            if (match.homeCompetitor) {
+                matchHomeId = match.homeCompetitor.id;
+                hScore = match.homeCompetitor.score !== undefined ? match.homeCompetitor.score : -1;
+            }
+            if (match.awayCompetitor) {
+                matchAwayId = match.awayCompetitor.id;
+                aScore = match.awayCompetitor.score !== undefined ? match.awayCompetitor.score : -1;
+            }
+
+            if (hScore !== -1 && aScore !== -1) {
+                if (hScore === aScore) {
+                    draws++;
+                } else if (hScore > aScore) {
+                    if (matchHomeId === homeId) homeWins++;
+                    else awayWins++;
+                } else {
+                    if (matchAwayId === homeId) homeWins++;
+                    else awayWins++;
+                }
+            }
+        });
+
+        recentMatches.forEach(match => {
+            let hScore = match.homeCompetitor?.score !== undefined ? match.homeCompetitor.score : '-';
+            let aScore = match.awayCompetitor?.score !== undefined ? match.awayCompetitor.score : '-';
+            
+            let hName = match.homeCompetitor?.name || "Home";
+            let aName = match.awayCompetitor?.name || "Away";
+
+            let hWinnerClass = '';
+            let aWinnerClass = '';
+            
+            if (hScore !== '-' && aScore !== '-') {
+                if (hScore > aScore) hWinnerClass = 'winner';
+                else if (aScore > hScore) aWinnerClass = 'winner';
+            }
+            
+            let compName = "";
+            if (match.competitionId && competitions) {
+                const comp = competitions.find(c => c.id === match.competitionId);
+                if (comp) compName = comp.name;
+            }
+            if (!compName && match.competitionDisplayName) compName = match.competitionDisplayName;
+            
+            const dateStr = match.startTime ? Helpers.formatDate(match.startTime) : "";
+            let statusStr = match.shortStatusText || match.statusText || "FT";
+            
+            recentHtml += `
+                <div class="os-h2h-recent-row">
+                    <div class="os-h2h-recent-meta">
+                        <span class="os-h2h-comp">${compName}</span>
+                        <span class="os-h2h-date">${dateStr}</span>
+                        <span class="os-h2h-status">${statusStr}</span>
+                    </div>
+                    <div class="os-h2h-recent-teams">
+                        <div class="os-h2h-team home ${hWinnerClass}">${hName}</div>
+                        <div class="os-h2h-score">${hScore} - ${aScore}</div>
+                        <div class="os-h2h-team away ${aWinnerClass}">${aName}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        let homePct = 0, awayPct = 0, drawPct = 0;
+        if (totalMatches > 0) {
+            homePct = (homeWins / totalMatches) * 100;
+            drawPct = (draws / totalMatches) * 100;
+            awayPct = (awayWins / totalMatches) * 100;
+        }
+
+        container.innerHTML = `
+            <div class="os-h2h-container">
+                <div class="os-mi-header">Head to Head</div>
+                
+                <div class="os-h2h-summary">
+                    <div class="os-h2h-total-badge">
+                        <span class="os-h2h-total-num">${totalMatches}</span>
+                        <span class="os-h2h-total-lbl">Matches</span>
+                    </div>
+                </div>
+
+                <div class="os-h2h-comparison">
+                    <div class="os-h2h-comp-labels">
+                        <div class="os-h2h-comp-lbl">
+                            <span class="os-h2h-comp-name">${homeName}</span>
+                            <span class="os-h2h-comp-val">${homeWins}</span>
+                        </div>
+                        <div class="os-h2h-comp-lbl center">
+                            <span class="os-h2h-comp-name">Draws</span>
+                            <span class="os-h2h-comp-val">${draws}</span>
+                        </div>
+                        <div class="os-h2h-comp-lbl right">
+                            <span class="os-h2h-comp-name">${awayName}</span>
+                            <span class="os-h2h-comp-val">${awayWins}</span>
+                        </div>
+                    </div>
+                    <div class="os-h2h-comp-bar">
+                        <div class="os-h2h-bar-segment home" style="width: ${homePct}%"></div>
+                        <div class="os-h2h-bar-segment draw" style="width: ${drawPct}%"></div>
+                        <div class="os-h2h-bar-segment away" style="width: ${awayPct}%"></div>
+                    </div>
+                </div>
+
+                <div class="os-h2h-recent-title">Recent Meetings</div>
+                <div class="os-h2h-recent-list">
+                    ${recentHtml}
+                </div>
+            </div>
+        `;
+    },
+
+    renderMatchRecentFormError() {
+        const container = this.elements['os-recent-form'];
+        if (!container) return;
+        container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">Unable to load recent form.</div>`;
+    },
+
+    renderMatchRecentForm(data) {
+        const container = this.elements['os-recent-form'];
+        if (!container) return;
+        
+        const game = data.game;
+        const hc = game.homeCompetitor;
+        const ac = game.awayCompetitor;
+        
+        let hRecent = hc.recentMatches || [];
+        let aRecent = ac.recentMatches || [];
+        
+        if (!hRecent.length && !aRecent.length) {
+            if (data.recentMatches && data.recentMatches.homeCompetitorMatches) {
+                hRecent = data.recentMatches.homeCompetitorMatches;
+                aRecent = data.recentMatches.awayCompetitorMatches;
+            } else if (data.homeCompetitorMatches) {
+                hRecent = data.homeCompetitorMatches;
+                aRecent = data.awayCompetitorMatches;
+            }
+        }
+        
+        const homeData = this.calculateFormStats(hRecent, hc.id, data.competitions);
+        const awayData = this.calculateFormStats(aRecent, ac.id, data.competitions);
+        
+        container.innerHTML = `
+            <div class="os-rf-container">
+                <div class="os-mi-header">Recent Form</div>
+                <div class="os-rf-panels">
+                    <div class="os-rf-panel home-panel">
+                        <div class="os-rf-panel-header">
+                            <img src="${Helpers.getLogoUrl(hc.id, hc.imageVersion)}" alt="${hc.name}" class="os-rf-logo" width="40" height="40" loading="lazy" decoding="async">
+                            <span class="os-rf-team-name">${hc.name}</span>
+                        </div>
+                        <div class="os-rf-rating ${homeData.ratingClass}">${homeData.ratingStr} Form</div>
+                        
+                        <div class="os-rf-form-badges">
+                            ${homeData.badgesHtml}
+                        </div>
+                        
+                        <div class="os-rf-summary-grid">
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.w}</span>
+                                <span class="os-rf-sum-lbl">Wins</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.d}</span>
+                                <span class="os-rf-sum-lbl">Draws</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.l}</span>
+                                <span class="os-rf-sum-lbl">Losses</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.gf}</span>
+                                <span class="os-rf-sum-lbl">Goals For</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.ga}</span>
+                                <span class="os-rf-sum-lbl">Goals Agst</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.cs}</span>
+                                <span class="os-rf-sum-lbl">Clean Sheets</span>
+                            </div>
+                            <div class="os-rf-sum-item full-width">
+                                <span class="os-rf-sum-val">${homeData.avgGoals}</span>
+                                <span class="os-rf-sum-lbl">Avg Goals/Match</span>
+                            </div>
+                        </div>
+
+                        <div class="os-rf-matches-list">
+                            ${homeData.matchesHtml}
+                        </div>
+                    </div>
+                    
+                    <div class="os-rf-panel away-panel">
+                        <div class="os-rf-panel-header">
+                            <img src="${Helpers.getLogoUrl(ac.id, ac.imageVersion)}" alt="${ac.name}" class="os-rf-logo" width="40" height="40" loading="lazy" decoding="async">
+                            <span class="os-rf-team-name">${ac.name}</span>
+                        </div>
+                        <div class="os-rf-rating ${awayData.ratingClass}">${awayData.ratingStr} Form</div>
+                        
+                        <div class="os-rf-form-badges">
+                            ${awayData.badgesHtml}
+                        </div>
+                        
+                        <div class="os-rf-summary-grid">
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.w}</span>
+                                <span class="os-rf-sum-lbl">Wins</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.d}</span>
+                                <span class="os-rf-sum-lbl">Draws</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.l}</span>
+                                <span class="os-rf-sum-lbl">Losses</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.gf}</span>
+                                <span class="os-rf-sum-lbl">Goals For</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.ga}</span>
+                                <span class="os-rf-sum-lbl">Goals Agst</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.cs}</span>
+                                <span class="os-rf-sum-lbl">Clean Sheets</span>
+                            </div>
+                            <div class="os-rf-sum-item full-width">
+                                <span class="os-rf-sum-val">${awayData.avgGoals}</span>
+                                <span class="os-rf-sum-lbl">Avg Goals/Match</span>
+                            </div>
+                        </div>
+
+                        <div class="os-rf-matches-list">
+                            ${awayData.matchesHtml}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    calculateFormStats(recentMatches, mainTeamId, competitions) {
+        let w = 0, d = 0, l = 0;
+        let gf = 0, ga = 0;
+        let cs = 0;
+        let badgesHtml = '';
+        let matchesHtml = '';
+        
+        let validMatches = 0;
+        
+        const matches = (recentMatches || []).slice(0, 5);
+        
+        matches.forEach(match => {
+            const isHome = match.homeCompetitor && match.homeCompetitor.id === mainTeamId;
+            const mainComp = isHome ? match.homeCompetitor : match.awayCompetitor;
+            const oppComp = isHome ? match.awayCompetitor : match.homeCompetitor;
+            
+            if (!mainComp || !oppComp) return;
+            
+            const mainScore = mainComp.score !== undefined ? mainComp.score : -1;
+            const oppScore = oppComp.score !== undefined ? oppComp.score : -1;
+            
+            let resultChar = '-';
+            let badgeClass = 'none';
+            
+            if (mainScore !== -1 && oppScore !== -1) {
+                validMatches++;
+                gf += mainScore;
+                ga += oppScore;
+                if (oppScore === 0) cs++;
+                
+                if (mainScore > oppScore) {
+                    w++;
+                    resultChar = 'W';
+                    badgeClass = 'win';
+                } else if (mainScore < oppScore) {
+                    l++;
+                    resultChar = 'L';
+                    badgeClass = 'loss';
+                } else {
+                    d++;
+                    resultChar = 'D';
+                    badgeClass = 'draw';
+                }
+            }
+            
+            badgesHtml += `<span class="os-rf-badge ${badgeClass}">${resultChar}</span>`;
+            
+            let compName = "";
+            if (match.competitionId && competitions) {
+                const comp = competitions.find(c => c.id === match.competitionId);
+                if (comp) compName = comp.name;
+            }
+            if (!compName && match.competitionDisplayName) compName = match.competitionDisplayName;
+            
+            const dateStr = match.startTime ? Helpers.formatDate(match.startTime) : "";
+            const oppName = oppComp.name;
+            const homeAwayIndicator = isHome ? "(H)" : "(A)";
+            const finalScore = mainScore !== -1 ? (isHome ? `${mainScore} - ${oppScore}` : `${oppScore} - ${mainScore}`) : "v";
+            
+            matchesHtml += `
+                <div class="os-rf-match-row">
+                    <div class="os-rf-match-meta">
+                        <span class="os-rf-comp">${compName}</span>
+                        <span class="os-rf-date">${dateStr}</span>
+                    </div>
+                    <div class="os-rf-match-main">
+                        <div class="os-rf-opp">${oppName} <span class="os-rf-ha">${homeAwayIndicator}</span></div>
+                        <div class="os-rf-mscore ${badgeClass}">${finalScore}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        let avgGoals = "0.00";
+        if (validMatches > 0) {
+            avgGoals = (gf / validMatches).toFixed(2);
+        }
+        
+        let ratingStr = "Unknown";
+        let ratingClass = "none";
+        
+        if (validMatches > 0) {
+            const pts = (w * 3) + (d * 1);
+            const maxPts = validMatches * 3;
+            const pct = pts / maxPts;
+            
+            if (pct >= 0.7) {
+                ratingStr = "Excellent";
+                ratingClass = "excellent";
+            } else if (pct >= 0.5) {
+                ratingStr = "Good";
+                ratingClass = "good";
+            } else if (pct >= 0.3) {
+                ratingStr = "Average";
+                ratingClass = "average";
+            } else {
+                ratingStr = "Poor";
+                ratingClass = "poor";
+            }
+        }
+        
+        return {
+            w, d, l, gf, ga, cs, avgGoals,
+            badgesHtml, matchesHtml,
+            ratingStr, ratingClass
+        };
+    },
+
+    initMatchStandings() {
+        const container = this.elements['os-group-standings'];
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="os-st-container">
+                <div class="os-mi-header">Standings</div>
+                <div class="os-st-table-wrapper" id="os-st-wrapper">
+                    <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    renderMatchStandingsError() {
+        const container = this.elements['os-group-standings'];
+        if (!container) return;
+        container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">Standings currently unavailable.</div>`;
+    },
+
+    renderMatchStandings(standingsData) {
+        const container = this.elements['os-group-standings'];
+        if (!container || !MatchStore.game?.game) return;
+        
+        if (MatchStore.game.game.hasStandings === false) {
+            container.style.display = 'none';
+            return;
+        }
+
+        if (standingsData) {
+            this.buildStandingsContent(MatchStore.game.game, standingsData);
+        } else {
+            this.renderMatchStandingsError();
+        }
+    },
+
+    buildStandingsContent(game, standingsObj) {
+        const container = MatchRenderer.elements['os-group-standings'];
+        if (!container) return;
+
+        if (!standingsObj.rows || standingsObj.rows.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        const homeId = game.homeCompetitor.id;
+        const awayId = game.awayCompetitor.id;
+
+        // Find which group each team belongs to
+        const homeRow = standingsObj.rows.find(r => r.competitor && r.competitor.id === homeId);
+        const awayRow = standingsObj.rows.find(r => r.competitor && r.competitor.id === awayId);
+
+        if (!homeRow && !awayRow) {
+            container.style.display = 'none';
+            return;
+        }
+
+        const homeGroupNum = homeRow ? homeRow.groupNum : null;
+        const awayGroupNum = awayRow ? awayRow.groupNum : null;
+        const sameGroup = homeGroupNum !== null && homeGroupNum === awayGroupNum;
+
+        const getGroupName = (groupNum) => {
+            if (!groupNum || !standingsObj.groups) return '';
+            const g = standingsObj.groups.find(g => g.num === groupNum);
+            return g ? Security.escapeHTML(g.name) : '';
+        };
+
+        const getDestinationColors = () => {
+            const destColors = {};
+            if (standingsObj.destinations) {
+                standingsObj.destinations.forEach(d => { destColors[d.num] = d.color; });
+            }
+            return destColors;
+        };
+        const destColors = getDestinationColors();
+
+        const buildGroupTable = (groupNum, highlightIds) => {
+            const groupRows = standingsObj.rows
+                .filter(r => r.groupNum === groupNum)
+                .sort((a, b) => a.position - b.position);
+            const groupName = getGroupName(groupNum);
+
+            let rowsHtml = '';
+            groupRows.forEach(row => {
+                const comp = row.competitor;
+                const isHighlight = highlightIds.includes(comp.id) ? 'highlight' : '';
+
+                const borderColor = row.destinationNum && destColors[row.destinationNum]
+                    ? destColors[row.destinationNum]
+                    : 'transparent';
+
+                let formHtml = '';
+                if (row.recentForm && row.recentForm.length > 0) {
+                    row.recentForm.slice(-5).forEach(f => {
+                        let fClass = 'loss', fChar = 'L';
+                        if (f === 1) { fClass = 'win'; fChar = 'W'; }
+                        else if (f === 2) { fClass = 'draw'; fChar = 'D'; }
+                        formHtml += `<span class="os-st-form-badge ${fClass}">${fChar}</span>`;
+                    });
+                }
+
+                rowsHtml += `
+                    <div class="os-st-row ${isHighlight}" id="os-st-row-${comp.id}" data-pos="${row.position}" style="border-left: 4px solid ${borderColor};">
+                        <div class="os-st-col pos" data-field="pos">${row.position}</div>
+                        <div class="os-st-col team">
+                            <img src="${Helpers.getLogoUrl(comp.id, comp.imageVersion)}" alt="${Security.escapeHTML(comp.name)}" class="os-st-logo" width="24" height="24" loading="lazy" decoding="async">
+                            <span class="os-st-team-name">${Security.escapeHTML(comp.name)}</span>
+                        </div>
+                        <div class="os-st-col" data-field="played">${row.gamePlayed}</div>
+                        <div class="os-st-col hide-mobile" data-field="won">${row.gamesWon}</div>
+                        <div class="os-st-col hide-mobile" data-field="drawn">${row.gamesEven}</div>
+                        <div class="os-st-col hide-mobile" data-field="lost">${row.gamesLost}</div>
+                        <div class="os-st-col hide-mobile" data-field="goals">${row.for}:${row.against}</div>
+                        <div class="os-st-col" data-field="gd">${row.ratio > 0 ? '+' : ''}${row.ratio}</div>
+                        <div class="os-st-col pts" data-field="pts">${row.points}</div>
+                        <div class="os-st-col form hide-mobile">${formHtml}</div>
+                    </div>
+                `;
+            });
+
+            return `
+                <div class="os-st-group-block">
+                    <div class="os-st-group-header">
+                        <span class="os-st-group-title">${groupName}</span>
+                    </div>
+                    <div class="os-st-table">
+                        <div class="os-st-header-row">
+                            <div class="os-st-col pos">Pos</div>
+                            <div class="os-st-col team">Country</div>
+                            <div class="os-st-col">P</div>
+                            <div class="os-st-col hide-mobile">W</div>
+                            <div class="os-st-col hide-mobile">D</div>
+                            <div class="os-st-col hide-mobile">L</div>
+                            <div class="os-st-col hide-mobile">Goals</div>
+                            <div class="os-st-col">GD</div>
+                            <div class="os-st-col pts">Pts</div>
+                            <div class="os-st-col form hide-mobile">Form</div>
+                        </div>
+                        <div class="os-st-body">
+                            ${rowsHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        let innerHtml = '';
+        if (sameGroup) {
+            // Same group: show one table with both highlighted
+            innerHtml = `<div class="os-st-tables-stack">${buildGroupTable(homeGroupNum, [homeId, awayId])}</div>`;
+        } else {
+            // Different groups: show two tables side-by-side
+            const homeTableHtml = homeGroupNum ? buildGroupTable(homeGroupNum, [homeId]) : '';
+            const awayTableHtml = awayGroupNum ? buildGroupTable(awayGroupNum, [awayId]) : '';
+            innerHtml = `
+                <div class="os-st-tables-stack">
+                    ${homeTableHtml}
+                    ${awayTableHtml}
+                </div>
+            `;
+        }
+
+        const displayName = 'Group Standings';
+        container.innerHTML = `
+            <div class="os-st-container">
+                <div class="os-mi-header">${displayName}</div>
+                ${innerHtml}
+            </div>
+        `;
+    },
+
+        initRelatedMatches() {
+        const container = this.elements['os-related-matches'];
+        if (!container) return;
+        
+        let skeletonHtml = '';
+        for(let i=0; i<3; i++) {
+            skeletonHtml += `
+                <div class="os-rm-card skeleton">
+                    <div class="os-rm-card-hero"></div>
+                    <div class="os-rm-card-content">
+                        <div class="os-rm-card-comp"></div>
+                        <div class="os-rm-card-title"></div>
+                        <div class="os-rm-card-teams">
+                            <div class="os-rm-card-team"></div>
+                            <div class="os-rm-card-team"></div>
+                        </div>
+                        <div class="os-rm-card-meta"></div>
+                        <div class="os-rm-card-btn"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = `
+            <div class="os-rm-container">
+                <div class="os-mi-header">Related Matches</div>
+                <div class="os-rm-grid" id="os-rm-grid">
+                    ${skeletonHtml}
+                </div>
+            </div>
+        `;
+    },
+
+    async fetchRelatedMatches(gameData) {
+        // Future logic for Blogger Feed API integration matching competition/date
+        // We will cache this request via API helper when fully implemented
+        return [];
+    },
+
+    renderRelatedMatches(matches) {
+        const container = this.elements['os-related-matches'];
+        const grid = document.getElementById('os-rm-grid');
+        if (!container || !grid) return;
+
+        if (!matches || matches.length === 0) {
+            grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 40px 20px; color: var(--text-muted); font-family: var(--font-main);">No related matches available.</div>`;
+            return;
+        }
+
+        let html = '';
+        grid.innerHTML = html;
+    },
+
+    initPopularPosts() {
+        const container = this.elements['os-popular-posts'];
+        if (!container) return;
+        container.innerHTML = `
+            <div class="os-h2h-container">
+                <div class="os-mi-header">Popular Posts</div>
+                <div class="os-popular-posts-body" style="padding: 16px; color: var(--text-muted); text-align: center;">
+                    <!-- Blogger Widget Placeholder -->
+                </div>
+            </div>
+        `;
+    },
+
+    renderSocialFeed() {
+        const container = this.elements['os-social-feed'];
+        if (!container) return;
+
+        const tg = MatchStore.metadata.socials.telegram;
+        const wa = MatchStore.metadata.socials.whatsapp;
+
         const tgBtn = tg ? `<a href="${tg}" target="_blank" class="os-sf-btn tg-btn">Join Telegram</a>` 
                          : `<button class="os-sf-btn disabled" disabled>Coming Soon</button>`;
 
