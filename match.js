@@ -2102,6 +2102,1244 @@ const MatchRenderer = {
         
         // Competition
         const comp = data.competitions ? data.competitions.find(c => c.id === game.competitionId) : null;
+        const compName = comp ? comp.name : (MatchStore.metadata.competition || "Match");
+        const stageName = (game.roundName && game.roundName !== "Round") ? game.roundName : (game.stageName && game.stageName !== "Group Stage" ? game.stageName : MatchStore.metadata.stage);
+        
+        let season = game.seasonNum || (comp ? comp.currentSeasonNum : null);
+        if (season && !isNaN(season) && Number(season) < 1900) season = null; // hide internal IDs
+
+        // Schedule
+        const matchDate = game.startTime ? new Date(game.startTime).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : null;
+        const kickoffTime = game.startTime ? new Date(game.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : null;
+        const status = Helpers.getMatchLiveTime(game);
+
+        // Venue
+        const stadium = game.venue ? game.venue.name : MatchStore.metadata.venue;
+        const city = game.venue && game.venue.city ? game.venue.city : null;
+        const country = game.venue && game.venue.country ? game.venue.country : null;
+
+        // Officials
+        let refName = null, ast = null, varRef = null;
+        if (game.officials && game.officials.length > 0) {
+            const mainRef = game.officials.find(o => o.roleId === 1 || o.type === 1);
+            if (mainRef) refName = mainRef.name;
+            
+            const assistants = game.officials.filter(o => o.roleId === 2 || o.type === 2);
+            if (assistants.length > 0) {
+                ast = assistants.map(a => a.name).join(', ');
+            }
+            
+            const varObj = game.officials.find(o => o.roleId === 4 || o.type === 4 || (o.name && o.name.includes("VAR")));
+            if (varObj) varRef = varObj.name;
+        } else if (game.referee) {
+            refName = game.referee.name || game.referee;
+        }
+
+        // Metadata
+        const matchId = game.id || MatchStore.metadata.matchId;
+        const attendance = game.attendance ? game.attendance.toLocaleString() : null;
+
+        const row = (label, val) => val && val !== "N/A" ? `<div class="os-mi-row"><span class="os-mi-label">${label}:</span> <span class="os-mi-val">${Security.escapeHTML(String(val))}</span></div>` : '';
+
+        const officialsHtml = (refName || ast || varRef) ? `
+            <div class="os-mi-section">
+                <div class="os-mi-title"><i class="fas fa-users"></i> Officials</div>
+                ${row('Referee', refName)}
+                ${row('Assistants', ast)}
+                ${row('VAR', varRef)}
+            </div>
+        ` : '';
+
+        const venueHtml = (stadium || city || country) ? `
+            <div class="os-mi-section">
+                <div class="os-mi-title"><i class="fas fa-map-marker-alt"></i> Venue</div>
+                ${row('Stadium', stadium)}
+                ${row('City', city)}
+                ${row('Country', country)}
+            </div>
+        ` : '';
+
+        const attendanceHtml = attendance ? `<span class="os-mi-badge">Attendance: ${Security.escapeHTML(attendance)}</span>` : '';
+
+        container.innerHTML = `
+            <div class="os-mi-container">
+                <div class="os-mi-header">Match Information</div>
+                <div class="os-mi-grid">
+                    
+                    <div class="os-mi-section">
+                        <div class="os-mi-title"><i class="fas fa-trophy"></i> Competition</div>
+                        ${row('Name', compName)}
+                        ${row('Stage', stageName)}
+                        ${row('Season', season)}
+                    </div>
+
+                    <div class="os-mi-section">
+                        <div class="os-mi-title"><i class="far fa-calendar-alt"></i> Schedule</div>
+                        ${row('Date', matchDate)}
+                        ${row('Kickoff', kickoffTime)}
+                        ${row('Status', status)}
+                    </div>
+
+                    ${venueHtml}
+                    ${officialsHtml}
+
+                    <div class="os-mi-section full-width">
+                        <div class="os-mi-title"><i class="fas fa-info-circle"></i> Match Metadata</div>
+                        <div class="os-mi-row-inline">
+                            <span class="os-mi-badge">ID: ${Security.escapeHTML(String(matchId))}</span>
+                            ${attendanceHtml}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderLineups(data) {
+        const container = this.elements['os-match-lineups'];
+        if (!container) return;
+        const game = data.game;
+        const hc = game.homeCompetitor, ac = game.awayCompetitor;
+        const members = game.members || [], events = game.events || [];
+        const hasHome = hc.lineups && hc.lineups.members && hc.lineups.members.length > 0;
+        const hasAway = ac.lineups && ac.lineups.members && ac.lineups.members.length > 0;
+        if (!hasHome && !hasAway) {
+            container.innerHTML = `<div class="os-lu-outer"><div class="os-lu-top-bar"><span class="os-mi-header" style="margin:0;border:none;padding:0;">Match Lineups</span></div><div style="text-align:center;padding:40px;color:var(--text-muted);font-family:var(--font-main);">Official lineups have not been released yet.</div></div>`;
+            return;
+        }
+        const homeParsed = this._luParseTeam(hc, members, events);
+        const awayParsed = this._luParseTeam(ac, members, events);
+        const homeLogo = Helpers.getLogoUrl(hc.id, hc.imageVersion);
+        const awayLogo = Helpers.getLogoUrl(ac.id, ac.imageVersion);
+        const homePanel = this._luBuildTeamPanel(hc, homeParsed, homeLogo);
+        const awayPanel = this._luBuildTeamPanel(ac, awayParsed, awayLogo);
+        const hn = Security.escapeHTML(hc.name), an = Security.escapeHTML(ac.name);
+
+        // Define switcher as a named global so onclick works reliably across template contexts
+        window._osLuSwitch = function(side) {
+            const hp = document.getElementById('os-lu-home-panel');
+            const ap = document.getElementById('os-lu-away-panel');
+            const hb = document.getElementById('os-lu-sw-home');
+            const ab = document.getElementById('os-lu-sw-away');
+            if (!hp || !ap) return;
+            if (side === 'home') {
+                hp.style.display = 'block'; ap.style.display = 'none';
+                if (hb) hb.classList.add('active');
+                if (ab) ab.classList.remove('active');
+            } else {
+                ap.style.display = 'block'; hp.style.display = 'none';
+                if (ab) ab.classList.add('active');
+                if (hb) hb.classList.remove('active');
+            }
+        };
+
+        const html = `<div class="os-lu-outer">
+            <div class="os-lu-top-bar">
+                <span class="os-mi-header" style="margin:0;border:none;padding:0;">Match Lineups</span>
+            </div>
+            <div class="os-lu-switcher-bar">
+                <div class="os-lu-switcher">
+                    <button class="os-lu-sw-btn active" id="os-lu-sw-home" onclick="window._osLuSwitch('home')">
+                        <img src="${homeLogo}" width="16" height="16" style="object-fit:contain;" alt="">
+                        ${hn} <span class="os-lu-sw-form">${homeParsed.formation}</span>
+                    </button>
+                    <button class="os-lu-sw-btn" id="os-lu-sw-away" onclick="window._osLuSwitch('away')">
+                        <img src="${awayLogo}" width="16" height="16" style="object-fit:contain;" alt="">
+                        ${an} <span class="os-lu-sw-form">${awayParsed.formation}</span>
+                    </button>
+                </div>
+            </div>
+            <div id="os-lu-home-panel" style="display:block;">${homePanel}</div>
+            <div id="os-lu-away-panel" style="display:none;">${awayPanel}</div>
+        </div>`;
+        const frag = document.createRange().createContextualFragment(html);
+        container.innerHTML = '';
+        container.appendChild(frag);
+    },
+
+    renderMatchStatsError() {
+        const container = this.elements['os-match-stats'];
+        if (!container) return;
+        container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">Unable to load match statistics.</div>`;
+    },
+
+    initMatchTimeline() {
+        const container = this.elements['os-match-timeline'];
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="os-tl-container-wrap">
+                <div class="os-cm-header-bar">
+                    <div class="os-tltab-switcher">
+                        <button class="os-tltab active" id="os-tltab-tl" onclick="
+                            document.getElementById('os-tltab-tl').classList.add('active');
+                            document.getElementById('os-tltab-cm').classList.remove('active');
+                            document.getElementById('os-tl-pane').style.display='';
+                            document.getElementById('os-cm-pane').style.display='none';
+                        "><i class='fas fa-list-ul'></i> Timeline</button>
+                        <button class="os-tltab" id="os-tltab-cm" onclick="
+                            document.getElementById('os-tltab-cm').classList.add('active');
+                            document.getElementById('os-tltab-tl').classList.remove('active');
+                            document.getElementById('os-cm-pane').style.display='';
+                            document.getElementById('os-tl-pane').style.display='none';
+                        "><i class='fas fa-microphone-alt'></i> Commentary</button>
+                    </div>
+                    <span class="os-cm-count" id="os-tl-count"></span>
+                </div>
+                <div class="os-tl-scroll-body" id="os-tl-body">
+                    <!-- Timeline pane -->
+                    <div id="os-tl-pane">
+                        <div class="os-timeline-wrapper" id="os-timeline-inner">
+                            <div style="text-align:center;padding:20px;color:var(--text-muted);font-family:var(--font-main);">
+                                <i class="fas fa-spinner fa-spin"></i> Loading timeline...
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Commentary pane -->
+                    <div id="os-cm-pane" style="display:none;">
+                        <div class="os-cm-list" id="os-cm-list">
+                            <div style="text-align:center;padding:20px;color:var(--text-muted);font-family:var(--font-main);">
+                                <i class="fas fa-spinner fa-spin"></i> Loading commentary...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="os-cm-toggle" id="os-tl-toggle" style="display:none;" onclick="
+                    var b = document.getElementById('os-tl-body');
+                    var btn = document.getElementById('os-tl-toggle');
+                    var outer = btn.closest('#os-match-timeline');
+                    var expanded = b.classList.toggle('os-cm-expanded');
+                    if (outer) outer.classList.toggle('os-cm-open', expanded);
+                    btn.innerHTML = expanded
+                        ? '<i class=\\'fas fa-chevron-up\\'></i> Show Less'
+                        : '<i class=\\'fas fa-chevron-down\\'></i> Show All Events';
+                "><i class="fas fa-chevron-down"></i> Show All Events</button>
+            </div>
+        `;
+
+        const eventsContainer = this.elements['os-match-events'];
+        if (eventsContainer) eventsContainer.style.display = 'none';
+    },
+
+    renderMatchTimelineError() {
+        const inner = document.getElementById('os-timeline-inner');
+        if (!inner) return;
+        inner.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">Unable to load match events.</div>`;
+    },
+
+    getEventIcon(eventName) {
+        const n = String(eventName || "").toLowerCase();
+        if (n.includes('goal')) return '<i class="fas fa-futbol" style="color:var(--text-main);"></i>';
+        if (n.includes('yellow') && n.includes('red')) return '<i class="fas fa-square" style="color: #ff9800;"></i>';
+        if (n.includes('yellow')) return '<i class="fas fa-square" style="color: #ffeb3b;"></i>';
+        if (n.includes('red')) return '<i class="fas fa-square" style="color: #f44336;"></i>';
+        if (n.includes('sub')) return '<i class="fas fa-exchange-alt" style="color: #4caf50;"></i>';
+        if (n.includes('var')) return '<i class="fas fa-tv" style="color: var(--primary);"></i>';
+        if (n.includes('half') || n.includes('time')) return '<i class="fas fa-stopwatch" style="color: var(--text-muted);"></i>';
+        if (n.includes('injury')) return '<i class="fas fa-medkit" style="color: #f44336;"></i>';
+        return '<i class="fas fa-info-circle" style="color: var(--text-muted);"></i>';
+    },
+
+    renderMatchTimeline(data) {
+        const inner = document.getElementById('os-timeline-inner');
+        if (!inner) return;
+
+        const game = data.game;
+        const events = game.events || [];
+
+        if (events.length === 0) {
+            inner.innerHTML = `
+                <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                    No match events yet.
+                </div>
+            `;
+            return;
+        }
+
+        const existingCount = inner.querySelectorAll('.os-tl-row').length;
+        if (existingCount === events.length && existingCount > 0) return;
+
+        let html = '';
+        const homeId = game.homeCompetitor.id;
+        
+        for (let i = existingCount; i < events.length; i++) {
+            const ev = events[i];
+            const time = ev.gameTime !== undefined ? ev.gameTime : "-";
+            const addedTime = ev.addedTime ? `+${ev.addedTime}` : "";
+            const displayTime = `${time}'${addedTime}`;
+            
+            const evName = Security.escapeHTML(ev.eventType ? ev.eventType.name : (ev.type || "Event"));
+            const iconHtml = this.getEventIcon(evName);
+            
+            let playerName = "";
+            if (ev.playerId && game.members) {
+                const athlete = game.members.find(a => a.id === ev.playerId);
+                if (athlete) playerName = Security.escapeHTML(athlete.name);
+            } else if (ev.playerName) {
+                playerName = Security.escapeHTML(ev.playerName);
+            }
+            
+            let extraName = "";
+            if (ev.extraPlayers && ev.extraPlayers.length > 0 && game.members) {
+                const extraId = ev.extraPlayers[0];
+                const athlete = game.members.find(a => a.id === extraId);
+                if (athlete) extraName = `<div class="os-tl-assist">Assist: ${Security.escapeHTML(athlete.name)}</div>`;
+            }
+
+            const teamId = ev.competitorId;
+            let sideClass = "center";
+            let logoUrl = "";
+            let teamName = "";
+            
+            if (teamId === homeId) {
+                sideClass = "home";
+                logoUrl = Helpers.getLogoUrl(game.homeCompetitor.id, game.homeCompetitor.imageVersion);
+                teamName = game.homeCompetitor.name;
+            } else if (teamId === game.awayCompetitor.id) {
+                sideClass = "away";
+                logoUrl = Helpers.getLogoUrl(game.awayCompetitor.id, game.awayCompetitor.imageVersion);
+                teamName = game.awayCompetitor.name;
+            }
+
+            const scoreHtml = (evName.toLowerCase().includes('goal') && ev.homeScore !== undefined) ?
+                `<div class="os-tl-score">${ev.homeScore} - ${ev.awayScore}</div>` : '';
+
+            let rowContent = '';
+            if (sideClass === 'center') {
+                rowContent = `
+                    <div class="os-tl-center-badge">${displayTime}</div>
+                    <div class="os-tl-center-content">
+                        ${iconHtml} <span class="os-tl-evt-name">${evName}</span>
+                    </div>
+                `;
+            } else {
+                const contentInner = `
+                    <div class="os-tl-header">
+                        <img src="${logoUrl}" class="os-tl-logo" width="24" height="24" loading="lazy" decoding="async" alt="${teamName}">
+                        <span class="os-tl-team">${teamName}</span>
+                    </div>
+                    <div class="os-tl-title">${iconHtml} <strong>${evName}</strong></div>
+                    <div class="os-tl-player">${playerName}</div>
+                    ${extraName}
+                    ${scoreHtml}
+                `;
+                if (sideClass === 'home') {
+                    rowContent = `
+                        <div class="os-tl-card home-card animate-in">${contentInner}</div>
+                        <div class="os-tl-time-badge">${displayTime}</div>
+                        <div class="os-tl-spacer"></div>
+                    `;
+                } else {
+                    rowContent = `
+                        <div class="os-tl-spacer"></div>
+                        <div class="os-tl-time-badge">${displayTime}</div>
+                        <div class="os-tl-card away-card animate-in">${contentInner}</div>
+                    `;
+                }
+            }
+
+            html += `<div class="os-tl-row ${sideClass}">${rowContent}</div>`;
+        }
+
+        if (existingCount === 0) {
+            inner.innerHTML = `<div class="os-tl-line"></div>${html}`;
+        } else if (html !== '') {
+            inner.insertAdjacentHTML('beforeend', html);
+        }
+
+        // Update count badge and show toggle
+        const totalEvents = inner.querySelectorAll('.os-tl-row').length;
+        const countEl = document.getElementById('os-tl-count');
+        if (countEl) countEl.textContent = `${totalEvents} event${totalEvents !== 1 ? 's' : ''}`;
+        const toggleBtn = document.getElementById('os-tl-toggle');
+        if (toggleBtn) {
+            toggleBtn.style.display = '';
+            // keep button label in sync if not expanded
+            const body = document.getElementById('os-tl-body');
+            if (body && !body.classList.contains('os-cm-expanded')) {
+                toggleBtn.innerHTML = `<i class="fas fa-chevron-down"></i> Show All ${totalEvents} Events`;
+            }
+        }
+    },
+
+    initMatchH2H() {
+        const container = this.elements['os-match-h2h'];
+        if (!container) return;
+        container.innerHTML = `
+            <div class="os-h2h-container">
+                <div class="os-mi-header">Head to Head</div>
+                <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            </div>
+        `;
+    },
+
+    renderMatchH2HError() {
+        const container = this.elements['os-match-h2h'];
+        if (!container) return;
+        container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">Unable to load Head-to-Head information.</div>`;
+    },
+
+    renderMatchH2H(data) {
+        const container = this.elements['os-match-h2h'];
+        if (!container) return;
+        
+        const game = data.game;
+        let h2hData = data.previousMeetings || game.previousMeetings;
+
+        if (!h2hData && game.hasPreviousMeetings) {
+            container.innerHTML = `
+                <div class="os-mi-header">Head to Head</div>
+                <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            `;
+            const url = `https://webws.365scores.com/web/game/previousmeetings/?appTypeId=5&langId=1&timezoneName=Asia%2FCalcutta&userCountryId=80&gameId=${MatchStore.metadata.matchId}`;
+            API.fetchJSON(url).then(fetched => {
+                if (fetched && fetched.previousMeetings) {
+                    this.buildH2HContent(container, game, fetched.previousMeetings, data.competitions);
+                } else {
+                    this.renderMatchH2HError();
+                }
+            }).catch(e => {
+                console.error("H2H fetch error", e);
+                this.renderMatchH2HError();
+            });
+        } else if (h2hData) {
+            this.buildH2HContent(container, game, h2hData, data.competitions);
+        } else {
+            container.innerHTML = `
+                <div class="os-mi-header">Head to Head</div>
+                <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                    No previous meetings found.
+                </div>
+            `;
+        }
+    },
+
+    buildH2HContent(container, game, h2hData, competitions) {
+        if (!h2hData || !Array.isArray(h2hData) || h2hData.length === 0) {
+            container.innerHTML = `
+                <div class="os-mi-header">Head to Head</div>
+                <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                    No previous meetings found.
+                </div>
+            `;
+            return;
+        }
+
+        const totalMatches = h2hData.length;
+        let homeWins = 0;
+        let awayWins = 0;
+        let draws = 0;
+
+        const homeId = game.homeCompetitor.id;
+        const awayId = game.awayCompetitor.id;
+        const homeName = Security.escapeHTML(game.homeCompetitor.name);
+        const awayName = Security.escapeHTML(game.awayCompetitor.name);
+
+        const recentMatches = h2hData.slice(0, 5);
+        let recentHtml = '';
+
+        h2hData.forEach(match => {
+            let hScore = -1, aScore = -1;
+            let matchHomeId = -1, matchAwayId = -1;
+            
+            if (match.homeCompetitor) {
+                matchHomeId = match.homeCompetitor.id;
+                hScore = match.homeCompetitor.score !== undefined ? match.homeCompetitor.score : -1;
+            }
+            if (match.awayCompetitor) {
+                matchAwayId = match.awayCompetitor.id;
+                aScore = match.awayCompetitor.score !== undefined ? match.awayCompetitor.score : -1;
+            }
+
+            if (hScore !== -1 && aScore !== -1) {
+                if (hScore === aScore) {
+                    draws++;
+                } else if (hScore > aScore) {
+                    if (matchHomeId === homeId) homeWins++;
+                    else awayWins++;
+                } else {
+                    if (matchAwayId === homeId) homeWins++;
+                    else awayWins++;
+                }
+            }
+        });
+
+        recentMatches.forEach(match => {
+            let hScore = match.homeCompetitor?.score !== undefined ? match.homeCompetitor.score : '-';
+            let aScore = match.awayCompetitor?.score !== undefined ? match.awayCompetitor.score : '-';
+            
+            let hName = match.homeCompetitor?.name || "Home";
+            let aName = match.awayCompetitor?.name || "Away";
+
+            let hWinnerClass = '';
+            let aWinnerClass = '';
+            
+            if (hScore !== '-' && aScore !== '-') {
+                if (hScore > aScore) hWinnerClass = 'winner';
+                else if (aScore > hScore) aWinnerClass = 'winner';
+            }
+            
+            let compName = "";
+            if (match.competitionId && competitions) {
+                const comp = competitions.find(c => c.id === match.competitionId);
+                if (comp) compName = comp.name;
+            }
+            if (!compName && match.competitionDisplayName) compName = match.competitionDisplayName;
+            
+            const dateStr = match.startTime ? Helpers.formatDate(match.startTime) : "";
+            let statusStr = match.shortStatusText || match.statusText || "FT";
+            
+            recentHtml += `
+                <div class="os-h2h-recent-row">
+                    <div class="os-h2h-recent-meta">
+                        <span class="os-h2h-comp">${compName}</span>
+                        <span class="os-h2h-date">${dateStr}</span>
+                        <span class="os-h2h-status">${statusStr}</span>
+                    </div>
+                    <div class="os-h2h-recent-teams">
+                        <div class="os-h2h-team home ${hWinnerClass}">${hName}</div>
+                        <div class="os-h2h-score">${hScore} - ${aScore}</div>
+                        <div class="os-h2h-team away ${aWinnerClass}">${aName}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        let homePct = 0, awayPct = 0, drawPct = 0;
+        if (totalMatches > 0) {
+            homePct = (homeWins / totalMatches) * 100;
+            drawPct = (draws / totalMatches) * 100;
+            awayPct = (awayWins / totalMatches) * 100;
+        }
+
+        container.innerHTML = `
+            <div class="os-h2h-container">
+                <div class="os-mi-header">Head to Head</div>
+                
+                <div class="os-h2h-summary">
+                    <div class="os-h2h-total-badge">
+                        <span class="os-h2h-total-num">${totalMatches}</span>
+                        <span class="os-h2h-total-lbl">Matches</span>
+                    </div>
+                </div>
+
+                <div class="os-h2h-comparison">
+                    <div class="os-h2h-comp-labels">
+                        <div class="os-h2h-comp-lbl">
+                            <span class="os-h2h-comp-name">${homeName}</span>
+                            <span class="os-h2h-comp-val">${homeWins}</span>
+                        </div>
+                        <div class="os-h2h-comp-lbl center">
+                            <span class="os-h2h-comp-name">Draws</span>
+                            <span class="os-h2h-comp-val">${draws}</span>
+                        </div>
+                        <div class="os-h2h-comp-lbl right">
+                            <span class="os-h2h-comp-name">${awayName}</span>
+                            <span class="os-h2h-comp-val">${awayWins}</span>
+                        </div>
+                    </div>
+                    <div class="os-h2h-comp-bar">
+                        <div class="os-h2h-bar-segment home" style="width: ${homePct}%"></div>
+                        <div class="os-h2h-bar-segment draw" style="width: ${drawPct}%"></div>
+                        <div class="os-h2h-bar-segment away" style="width: ${awayPct}%"></div>
+                    </div>
+                </div>
+
+                <div class="os-h2h-recent-title">Recent Meetings</div>
+                <div class="os-h2h-recent-list">
+                    ${recentHtml}
+                </div>
+            </div>
+        `;
+    },
+
+    renderMatchRecentFormError() {
+        const container = this.elements['os-recent-form'];
+        if (!container) return;
+        container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">Unable to load recent form.</div>`;
+    },
+
+    renderMatchRecentForm(data) {
+        const container = this.elements['os-recent-form'];
+        if (!container) return;
+        
+        const game = data.game;
+        const hc = game.homeCompetitor;
+        const ac = game.awayCompetitor;
+        
+        let hRecent = hc.recentMatches || [];
+        let aRecent = ac.recentMatches || [];
+        
+        if (!hRecent.length && !aRecent.length) {
+            if (data.recentMatches && data.recentMatches.homeCompetitorMatches) {
+                hRecent = data.recentMatches.homeCompetitorMatches;
+                aRecent = data.recentMatches.awayCompetitorMatches;
+            } else if (data.homeCompetitorMatches) {
+                hRecent = data.homeCompetitorMatches;
+                aRecent = data.awayCompetitorMatches;
+            }
+        }
+        
+        const homeData = this.calculateFormStats(hRecent, hc.id, data.competitions);
+        const awayData = this.calculateFormStats(aRecent, ac.id, data.competitions);
+        
+        container.innerHTML = `
+            <div class="os-rf-container">
+                <div class="os-mi-header">Recent Form</div>
+                <div class="os-rf-panels">
+                    <div class="os-rf-panel home-panel">
+                        <div class="os-rf-panel-header">
+                            <img src="${Helpers.getLogoUrl(hc.id, hc.imageVersion)}" alt="${hc.name}" class="os-rf-logo" width="40" height="40" loading="lazy" decoding="async">
+                            <span class="os-rf-team-name">${hc.name}</span>
+                        </div>
+                        <div class="os-rf-rating ${homeData.ratingClass}">${homeData.ratingStr} Form</div>
+                        
+                        <div class="os-rf-form-badges">
+                            ${homeData.badgesHtml}
+                        </div>
+                        
+                        <div class="os-rf-summary-grid">
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.w}</span>
+                                <span class="os-rf-sum-lbl">Wins</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.d}</span>
+                                <span class="os-rf-sum-lbl">Draws</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.l}</span>
+                                <span class="os-rf-sum-lbl">Losses</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.gf}</span>
+                                <span class="os-rf-sum-lbl">Goals For</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.ga}</span>
+                                <span class="os-rf-sum-lbl">Goals Agst</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${homeData.cs}</span>
+                                <span class="os-rf-sum-lbl">Clean Sheets</span>
+                            </div>
+                            <div class="os-rf-sum-item full-width">
+                                <span class="os-rf-sum-val">${homeData.avgGoals}</span>
+                                <span class="os-rf-sum-lbl">Avg Goals/Match</span>
+                            </div>
+                        </div>
+
+                        <div class="os-rf-matches-list">
+                            ${homeData.matchesHtml}
+                        </div>
+                    </div>
+                    
+                    <div class="os-rf-panel away-panel">
+                        <div class="os-rf-panel-header">
+                            <img src="${Helpers.getLogoUrl(ac.id, ac.imageVersion)}" alt="${ac.name}" class="os-rf-logo" width="40" height="40" loading="lazy" decoding="async">
+                            <span class="os-rf-team-name">${ac.name}</span>
+                        </div>
+                        <div class="os-rf-rating ${awayData.ratingClass}">${awayData.ratingStr} Form</div>
+                        
+                        <div class="os-rf-form-badges">
+                            ${awayData.badgesHtml}
+                        </div>
+                        
+                        <div class="os-rf-summary-grid">
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.w}</span>
+                                <span class="os-rf-sum-lbl">Wins</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.d}</span>
+                                <span class="os-rf-sum-lbl">Draws</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.l}</span>
+                                <span class="os-rf-sum-lbl">Losses</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.gf}</span>
+                                <span class="os-rf-sum-lbl">Goals For</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.ga}</span>
+                                <span class="os-rf-sum-lbl">Goals Agst</span>
+                            </div>
+                            <div class="os-rf-sum-item">
+                                <span class="os-rf-sum-val">${awayData.cs}</span>
+                                <span class="os-rf-sum-lbl">Clean Sheets</span>
+                            </div>
+                            <div class="os-rf-sum-item full-width">
+                                <span class="os-rf-sum-val">${awayData.avgGoals}</span>
+                                <span class="os-rf-sum-lbl">Avg Goals/Match</span>
+                            </div>
+                        </div>
+
+                        <div class="os-rf-matches-list">
+                            ${awayData.matchesHtml}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    calculateFormStats(recentMatches, mainTeamId, competitions) {
+        let w = 0, d = 0, l = 0;
+        let gf = 0, ga = 0;
+        let cs = 0;
+        let badgesHtml = '';
+        let matchesHtml = '';
+        
+        let validMatches = 0;
+        
+        const matches = (recentMatches || []).slice(0, 5);
+        
+        matches.forEach(match => {
+            const isHome = match.homeCompetitor && match.homeCompetitor.id === mainTeamId;
+            const mainComp = isHome ? match.homeCompetitor : match.awayCompetitor;
+            const oppComp = isHome ? match.awayCompetitor : match.homeCompetitor;
+            
+            if (!mainComp || !oppComp) return;
+            
+            const mainScore = mainComp.score !== undefined ? mainComp.score : -1;
+            const oppScore = oppComp.score !== undefined ? oppComp.score : -1;
+            
+            let resultChar = '-';
+            let badgeClass = 'none';
+            
+            if (mainScore !== -1 && oppScore !== -1) {
+                validMatches++;
+                gf += mainScore;
+                ga += oppScore;
+                if (oppScore === 0) cs++;
+                
+                if (mainScore > oppScore) {
+                    w++;
+                    resultChar = 'W';
+                    badgeClass = 'win';
+                } else if (mainScore < oppScore) {
+                    l++;
+                    resultChar = 'L';
+                    badgeClass = 'loss';
+                } else {
+                    d++;
+                    resultChar = 'D';
+                    badgeClass = 'draw';
+                }
+            }
+            
+            badgesHtml += `<span class="os-rf-badge ${badgeClass}">${resultChar}</span>`;
+            
+            let compName = "";
+            if (match.competitionId && competitions) {
+                const comp = competitions.find(c => c.id === match.competitionId);
+                if (comp) compName = comp.name;
+            }
+            if (!compName && match.competitionDisplayName) compName = match.competitionDisplayName;
+            
+            const dateStr = match.startTime ? Helpers.formatDate(match.startTime) : "";
+            const oppName = oppComp.name;
+            const homeAwayIndicator = isHome ? "(H)" : "(A)";
+            const finalScore = mainScore !== -1 ? (isHome ? `${mainScore} - ${oppScore}` : `${oppScore} - ${mainScore}`) : "v";
+            
+            matchesHtml += `
+                <div class="os-rf-match-row">
+                    <div class="os-rf-match-meta">
+                        <span class="os-rf-comp">${compName}</span>
+                        <span class="os-rf-date">${dateStr}</span>
+                    </div>
+                    <div class="os-rf-match-main">
+                        <div class="os-rf-opp">${oppName} <span class="os-rf-ha">${homeAwayIndicator}</span></div>
+                        <div class="os-rf-mscore ${badgeClass}">${finalScore}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        let avgGoals = "0.00";
+        if (validMatches > 0) {
+            avgGoals = (gf / validMatches).toFixed(2);
+        }
+        
+        let ratingStr = "Unknown";
+        let ratingClass = "none";
+        
+        if (validMatches > 0) {
+            const pts = (w * 3) + (d * 1);
+            const maxPts = validMatches * 3;
+            const pct = pts / maxPts;
+            
+            if (pct >= 0.7) {
+                ratingStr = "Excellent";
+                ratingClass = "excellent";
+            } else if (pct >= 0.5) {
+                ratingStr = "Good";
+                ratingClass = "good";
+            } else if (pct >= 0.3) {
+                ratingStr = "Average";
+                ratingClass = "average";
+            } else {
+                ratingStr = "Poor";
+                ratingClass = "poor";
+            }
+        }
+        
+        return {
+            w, d, l, gf, ga, cs, avgGoals,
+            badgesHtml, matchesHtml,
+            ratingStr, ratingClass
+        };
+    },
+
+    initMatchStandings() {
+        const container = this.elements['os-group-standings'];
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="os-st-container">
+                <div class="os-mi-header">Standings</div>
+                <div class="os-st-table-wrapper" id="os-st-wrapper">
+                    <div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    renderMatchStandingsError() {
+        const container = this.elements['os-group-standings'];
+        if (!container) return;
+        container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-family: var(--font-main);">Standings currently unavailable.</div>`;
+    },
+
+    renderMatchStandings(standingsData) {
+        const container = this.elements['os-group-standings'];
+        if (!container || !MatchStore.game?.game) return;
+        
+        if (MatchStore.game.game.hasStandings === false) {
+            container.style.display = 'none';
+            return;
+        }
+
+        if (standingsData) {
+            this.buildStandingsContent(MatchStore.game.game, standingsData);
+        } else {
+            this.renderMatchStandingsError();
+        }
+    },
+
+    buildStandingsContent(game, standingsObj) {
+        const container = MatchRenderer.elements['os-group-standings'];
+        if (!container) return;
+
+        if (!standingsObj.rows || standingsObj.rows.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        const homeId = game.homeCompetitor.id;
+        const awayId = game.awayCompetitor.id;
+
+        // Find which group each team belongs to
+        const homeRow = standingsObj.rows.find(r => r.competitor && r.competitor.id === homeId);
+        const awayRow = standingsObj.rows.find(r => r.competitor && r.competitor.id === awayId);
+
+        if (!homeRow && !awayRow) {
+            container.style.display = 'none';
+            return;
+        }
+
+        const homeGroupNum = homeRow ? homeRow.groupNum : null;
+        const awayGroupNum = awayRow ? awayRow.groupNum : null;
+        const sameGroup = homeGroupNum !== null && homeGroupNum === awayGroupNum;
+
+        const getGroupName = (groupNum) => {
+            if (!groupNum || !standingsObj.groups) return '';
+            const g = standingsObj.groups.find(g => g.num === groupNum);
+            return g ? Security.escapeHTML(g.name) : '';
+        };
+
+        const getDestinationColors = () => {
+            const destColors = {};
+            if (standingsObj.destinations) {
+                standingsObj.destinations.forEach(d => { destColors[d.num] = d.color; });
+            }
+            return destColors;
+        };
+        const destColors = getDestinationColors();
+
+        const buildGroupTable = (groupNum, highlightIds) => {
+            const groupRows = standingsObj.rows
+                .filter(r => r.groupNum === groupNum)
+                .sort((a, b) => a.position - b.position);
+            const groupName = getGroupName(groupNum);
+
+            let rowsHtml = '';
+            groupRows.forEach(row => {
+                const comp = row.competitor;
+                const isHighlight = highlightIds.includes(comp.id) ? 'highlight' : '';
+
+                const borderColor = row.destinationNum && destColors[row.destinationNum]
+                    ? destColors[row.destinationNum]
+                    : 'transparent';
+
+                let formHtml = '';
+                if (row.recentForm && row.recentForm.length > 0) {
+                    row.recentForm.slice(-5).forEach(f => {
+                        let fClass = 'loss', fChar = 'L';
+                        if (f === 1) { fClass = 'win'; fChar = 'W'; }
+                        else if (f === 2) { fClass = 'draw'; fChar = 'D'; }
+                        formHtml += `<span class="os-st-form-badge ${fClass}">${fChar}</span>`;
+                    });
+                }
+
+                rowsHtml += `
+                    <div class="os-st-row ${isHighlight}" id="os-st-row-${comp.id}" data-pos="${row.position}" style="border-left: 4px solid ${borderColor};">
+                        <div class="os-st-col pos" data-field="pos">${row.position}</div>
+                        <div class="os-st-col team">
+                            <img src="${Helpers.getLogoUrl(comp.id, comp.imageVersion)}" alt="${Security.escapeHTML(comp.name)}" class="os-st-logo" width="24" height="24" loading="lazy" decoding="async">
+                            <span class="os-st-team-name">${Security.escapeHTML(comp.name)}</span>
+                        </div>
+                        <div class="os-st-col" data-field="played">${row.gamePlayed}</div>
+                        <div class="os-st-col hide-mobile" data-field="won">${row.gamesWon}</div>
+                        <div class="os-st-col hide-mobile" data-field="drawn">${row.gamesEven}</div>
+                        <div class="os-st-col hide-mobile" data-field="lost">${row.gamesLost}</div>
+                        <div class="os-st-col hide-mobile" data-field="goals">${row.for}:${row.against}</div>
+                        <div class="os-st-col" data-field="gd">${row.ratio > 0 ? '+' : ''}${row.ratio}</div>
+                        <div class="os-st-col pts" data-field="pts">${row.points}</div>
+                        <div class="os-st-col form hide-mobile">${formHtml}</div>
+                    </div>
+                `;
+            });
+
+            return `
+                <div class="os-st-group-block">
+                    <div class="os-st-group-header">
+                        <span class="os-st-group-title">${groupName}</span>
+                    </div>
+                    <div class="os-st-table">
+                        <div class="os-st-header-row">
+                            <div class="os-st-col pos">Pos</div>
+                            <div class="os-st-col team">Country</div>
+                            <div class="os-st-col">P</div>
+                            <div class="os-st-col hide-mobile">W</div>
+                            <div class="os-st-col hide-mobile">D</div>
+                            <div class="os-st-col hide-mobile">L</div>
+                            <div class="os-st-col hide-mobile">Goals</div>
+                            <div class="os-st-col">GD</div>
+                            <div class="os-st-col pts">Pts</div>
+                            <div class="os-st-col form hide-mobile">Form</div>
+                        </div>
+                        <div class="os-st-body">
+                            ${rowsHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        let innerHtml = '';
+        if (sameGroup) {
+            // Same group: show one table with both highlighted
+            innerHtml = `<div class="os-st-tables-stack">${buildGroupTable(homeGroupNum, [homeId, awayId])}</div>`;
+        } else {
+            // Different groups: show two tables side-by-side
+            const homeTableHtml = homeGroupNum ? buildGroupTable(homeGroupNum, [homeId]) : '';
+            const awayTableHtml = awayGroupNum ? buildGroupTable(awayGroupNum, [awayId]) : '';
+            innerHtml = `
+                <div class="os-st-tables-stack">
+                    ${homeTableHtml}
+                    ${awayTableHtml}
+                </div>
+            `;
+        }
+
+        const displayName = 'Group Standings';
+        container.innerHTML = `
+            <div class="os-st-container">
+                <div class="os-mi-header">${displayName}</div>
+                ${innerHtml}
+            </div>
+        `;
+    },
+
+        initRelatedMatches() {
+        const container = this.elements['os-related-matches'];
+        if (!container) return;
+        
+        let skeletonHtml = '';
+        for(let i=0; i<3; i++) {
+            skeletonHtml += `
+                <div class="os-rm-card skeleton">
+                    <div class="os-rm-card-hero"></div>
+                    <div class="os-rm-card-content">
+                        <div class="os-rm-card-comp"></div>
+                        <div class="os-rm-card-title"></div>
+                        <div class="os-rm-card-teams">
+                            <div class="os-rm-card-team"></div>
+                            <div class="os-rm-card-team"></div>
+                        </div>
+                        <div class="os-rm-card-meta"></div>
+                        <div class="os-rm-card-btn"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = `
+            <div class="os-rm-container">
+                <div class="os-mi-header">Related Matches</div>
+                <div class="os-rm-grid" id="os-rm-grid">
+                    ${skeletonHtml}
+                </div>
+            </div>
+        `;
+    },
+
+    async fetchRelatedMatches(gameData) {
+        // Future logic for Blogger Feed API integration matching competition/date
+        // We will cache this request via API helper when fully implemented
+        return [];
+    },
+
+    renderRelatedMatches(matches) {
+        const container = this.elements['os-related-matches'];
+        const grid = document.getElementById('os-rm-grid');
+        if (!container || !grid) return;
+
+        if (!matches || matches.length === 0) {
+            grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding: 40px 20px; color: var(--text-muted); font-family: var(--font-main);">No related matches available.</div>`;
+            return;
+        }
+
+        let html = '';
+        grid.innerHTML = html;
+    },
+
+    initPopularPosts() {
+        const container = this.elements['os-popular-posts'];
+        if (!container) return;
+        container.innerHTML = `
+            <div class="os-h2h-container">
+                <div class="os-mi-header">Popular Posts</div>
+                <div class="os-popular-posts-body" style="padding: 16px; color: var(--text-muted); text-align: center;">
+                    <!-- Blogger Widget Placeholder -->
+                </div>
+            </div>
+        `;
+    },
+
+    renderSocialFeed() {
+        const container = this.elements['os-social-feed'];
+        if (!container) return;
+
+        const tg = MatchStore.metadata.socials.telegram;
+        const wa = MatchStore.metadata.socials.whatsapp;
+
+        const tgBtn = tg ? `<a href="${tg}" target="_blank" class="os-sf-btn tg-btn">Join Telegram</a>` 
+                         : `<button class="os-sf-btn disabled" disabled>Coming Soon</button>`;
+
+        const waBtn = wa ? `<a href="${wa}" target="_blank" class="os-sf-btn wa-btn">Join WhatsApp</a>` 
+                         : `<button class="os-sf-btn disabled" disabled>Coming Soon</button>`;
+
+        container.innerHTML = `
+            <div class="os-sf-container">
+                <div class="os-mi-header">Join Our Community</div>
+                <div class="os-sf-grid">
+                    <div class="os-sf-card tg-card">
+                        <div class="os-sf-icon-wrap tg-icon">
+                            <i class="fab fa-telegram-plane"></i>
+                        </div>
+                        <div class="os-sf-content">
+                            <div class="os-sf-title">Official Telegram Channel</div>
+                            <div class="os-sf-desc">Get live match updates, breaking football news, fixtures and alerts.</div>
+                            <div class="os-sf-action">${tgBtn}</div>
+                        </div>
+                    </div>
+
+                    <div class="os-sf-card wa-card">
+                        <div class="os-sf-icon-wrap wa-icon">
+                            <i class="fab fa-whatsapp"></i>
+                        </div>
+                        <div class="os-sf-content">
+                            <div class="os-sf-title">Official WhatsApp Channel</div>
+                            <div class="os-sf-desc">Receive instant match notifications and important updates directly on WhatsApp.</div>
+                            <div class="os-sf-action">${waBtn}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    initMatchStats() {
+        const container = this.elements['os-match-stats'];
+        if (!container) return;
+
+        let statsHtml = '';
+        this.supportedStats.forEach((statName, index) => {
+            const isPct = statName.includes("Possession") || statName.includes("Accuracy");
+            const defaultVal = isPct ? "0%" : "0";
+            
+            statsHtml += `
+                <div class="os-stat-row" data-stat-id="${index}">
+                    <div class="os-stat-labels">
+                        <span class="os-stat-val home" data-side="home">${defaultVal}</span>
+                        <span class="os-stat-name">${statName}</span>
+                        <span class="os-stat-val away" data-side="away">${defaultVal}</span>
+                    </div>
+                    <div class="os-stat-bar-container">
+                        <div class="os-stat-bar home" data-side="home" style="width: 0%"></div>
+                        <div class="os-stat-bar away" data-side="away" style="width: 0%"></div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = `
+            <div class="os-stats-container">
+                <div class="os-mi-header">Match Statistics</div>
+                <div class="os-stats-wrapper">
+                    ${statsHtml}
+                </div>
+            </div>
+        `;
+    },
+
+    animateNumber(el, targetStr, duration) {
+        const targetNum = parseFloat(String(targetStr).replace('%', ''));
+        if (isNaN(targetNum)) {
+            el.innerText = targetStr;
+            return;
+        }
+        const isPct = String(targetStr).includes('%');
+        const isFloat = String(targetStr).includes('.');
+        const startTime = performance.now();
+        
+        const update = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            
+            let currentNum = targetNum * easeProgress;
+            if (!isFloat) currentNum = Math.round(currentNum);
+            else currentNum = currentNum.toFixed(1);
+            
+            el.innerText = currentNum + (isPct ? '%' : '');
+            
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            } else {
+                el.innerText = targetStr;
+            }
+        };
+        requestAnimationFrame(update);
+    },
+
+    renderMatchStats(data) {
+        const container = this.elements['os-match-stats'];
+        if (!container) return;
+
+        const game = data.game;
+        
+        let homeStats = [];
+        let awayStats = [];
+        
+        if (game.statistics && Array.isArray(game.statistics)) {
+            // Handled via loop below
+        } else {
+            homeStats = game.homeCompetitor.statistics || game.homeCompetitor.stats || [];
+            awayStats = game.awayCompetitor.statistics || game.awayCompetitor.stats || [];
+        }
+        
+        const statsMap = new Map();
+        
+        if (game.statistics && Array.isArray(game.statistics) && game.statistics[0] && game.statistics[0].homeValue !== undefined) {
+            game.statistics.forEach(s => {
+                statsMap.set(s.name.toLowerCase(), { home: s.homeValue, away: s.awayValue });
+            });
+        } else {
+            homeStats.forEach(s => statsMap.set(s.name.toLowerCase(), { home: s.value, away: 0 }));
+            awayStats.forEach(s => {
+                const key = s.name.toLowerCase();
+                if (statsMap.has(key)) {
+                    statsMap.get(key).away = s.value;
+                } else {
+                    statsMap.set(key, { home: 0, away: s.value });
+                }
+            });
+        }
+        
+        this.supportedStats.forEach((statName, index) => {
+            const row = container.querySelector(`.os-stat-row[data-stat-id="${index}"]`);
+            if (!row) return;
+
+            const lookupName = statName.toLowerCase();
+            let matchedStat = statsMap.get(lookupName);
+            
+            if (!matchedStat) {
+                for (let [key, val] of statsMap.entries()) {
+                    if (key.includes(lookupName) || lookupName.includes(key) || (key.includes("xg") && lookupName.includes("xg"))) {
+                        matchedStat = val;
+                        break;
+                    }
+                }
+            }
+
+            const isPct = statName.includes("Possession") || statName.includes("Accuracy");
+            
+            let hValStr = matchedStat ? String(matchedStat.home) : (isPct ? "0%" : "0");
+            let aValStr = matchedStat ? String(matchedStat.away) : (isPct ? "0%" : "0");
+            
+            if (isPct && !hValStr.includes('%')) hValStr += "%";
+            if (isPct && !aValStr.includes('%')) aValStr += "%";
+            
+            let hNum = parseFloat(hValStr.replace('%', '')) || 0;
+            let aNum = parseFloat(aValStr.replace('%', '')) || 0;
+            
+            let total = hNum + aNum;
+            let hPct = 0;
+            let aPct = 0;
+            if (total > 0) {
+                hPct = (hNum / total) * 100;
+                aPct = (aNum / total) * 100;
+            }
+
+            const hValEl = row.querySelector('.os-stat-val.home');
+            const aValEl = row.querySelector('.os-stat-val.away');
+            const hBarEl = row.querySelector('.os-stat-bar.home');
+            const aBarEl = row.querySelector('.os-stat-bar.away');
+
+            if (hValEl && aValEl && hBarEl && aBarEl) {
+                hValEl.classList.remove('os-stat-winner');
+                aValEl.classList.remove('os-stat-winner');
+                if (hNum > aNum) hValEl.classList.add('os-stat-winner');
+                if (aNum > hNum) aValEl.classList.add('os-stat-winner');
+
+                hBarEl.style.width = `${hPct}%`;
+                aBarEl.style.width = `${aPct}%`;
+
+                this.animateNumber(hValEl, hValStr, 500);
+                this.animateNumber(aValEl, aValStr, 500);
+            }
+        });
+    },
+
+    renderMatchInfo(data) {
+        const container = this.elements['os-match-info'];
+        if (!container) return;
+
+        const game = data.game;
+        
+        // Competition
+        const comp = data.competitions ? data.competitions.find(c => c.id === game.competitionId) : null;
         const compName = Security.escapeHTML(comp ? comp.name : (MatchStore.metadata.competition || "Match"));
         const stageName = Security.escapeHTML(game.roundName && game.roundName !== "Round" ? game.roundName : (game.stageName && game.stageName !== "Group Stage" ? game.stageName : (MatchStore.metadata.stage || "N/A")));
         const season = Security.escapeHTML(game.seasonNum || (comp ? comp.currentSeasonNum : "N/A") || "N/A");
