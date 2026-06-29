@@ -336,7 +336,8 @@ const OneSportsMatch = (() => {
                 `;
                 container.insertAdjacentHTML('beforeend', html);
                 window.OneSports.log('Poster Module rendered.');
-
+            }
+        },
 
         MatchInfo: {
             init: async () => {
