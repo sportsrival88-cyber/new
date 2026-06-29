@@ -819,7 +819,9 @@ const MatchRenderer = {
         return parsed.starters.map((p, i) => {
             const pos = positions[i] || { x: 50, y: 50 };
             const imgUrl = this._luGetPlayerImageUrl(p.athleteId);
-            const shortName = p.name.split(' ').pop();
+            // Use last name, but if it's 1 word use full name
+            const parts = p.name.split(' ');
+            const shortName = parts.length > 1 ? parts[parts.length - 1] : p.name;
             const evIcons = [];
             if (p.playerEvs.includes('goal'))   evIcons.push('<i class="fas fa-futbol os-lu-ev-goal"></i>');
             if (p.playerEvs.includes('yellow')) evIcons.push('<i class="fas fa-square os-lu-ev-yellow"></i>');
@@ -828,28 +830,37 @@ const MatchRenderer = {
             const evHtml = evIcons.length ? `<div class="os-lu-tok-evs">${evIcons.join('')}</div>` : '';
             return `<div class="os-lu-tok" style="left:${pos.x}%;top:${pos.y}%;">
                 <div class="os-lu-tok-photo-wrap">
-                    <img class="os-lu-tok-photo" src="${imgUrl}" width="44" height="44"
+                    <img class="os-lu-tok-photo" src="${imgUrl}" width="58" height="58"
                         loading="lazy" decoding="async" alt="${p.name}"
                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                     <div class="os-lu-tok-fallback" style="display:none;">${p.num || '?'}</div>
-                    ${p.isCap ? '<div class="os-lu-tok-cap">C</div>' : ''}${evHtml}
+                    ${p.num ? `<div class="os-lu-tok-num-badge">${p.num}</div>` : ''}
+                    ${p.isCap ? '<div class="os-lu-tok-cap">C</div>' : ''}
+                    ${evHtml}
                 </div>
-                <div class="os-lu-tok-num">${p.num}</div>
                 <div class="os-lu-tok-name">${shortName}</div>
             </div>`;
         }).join('');
     },
 
     _luSubRow(p) {
+        const imgUrl = this._luGetPlayerImageUrl(p.athleteId);
         const evs = [];
         if (p.playerEvs.includes('goal'))   evs.push('<i class="fas fa-futbol os-lu-ev-goal"></i>');
         if (p.playerEvs.includes('yellow')) evs.push('<i class="fas fa-square os-lu-ev-yellow"></i>');
         if (p.playerEvs.includes('red'))    evs.push('<i class="fas fa-square os-lu-ev-red"></i>');
         if (p.isSubOn) evs.push(`<i class="fas fa-arrow-up os-lu-ev-subon"></i>${p.subTime ? `<span class="os-lu-subtime">${p.subTime}'</span>` : ''}`);
         return `<div class="os-lu-sub-row${p.isSubOn ? ' subbed-on' : ''}">
-            <span class="os-lu-sub-num">${p.num || '-'}</span>
-            <span class="os-lu-sub-name">${p.name}${p.isCap ? ' <span class="os-lu-cap">C</span>' : ''}</span>
-            <span class="os-lu-sub-pos">${p.pos}</span>
+            <div class="os-lu-sub-photo-wrap">
+                <img class="os-lu-sub-photo" src="${imgUrl}" width="36" height="36"
+                    loading="lazy" decoding="async" alt="${p.name}"
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                <div class="os-lu-sub-photo-fallback" style="display:none;">${p.num || '?'}</div>
+            </div>
+            <div class="os-lu-sub-info">
+                <span class="os-lu-sub-name">${p.name}${p.isCap ? ' <span class="os-lu-cap">C</span>' : ''}</span>
+                <span class="os-lu-sub-meta">#${p.num || '-'} · ${p.pos}</span>
+            </div>
             ${evs.length ? `<span class="os-lu-sub-evs">${evs.join('')}</span>` : ''}
         </div>`;
     },
