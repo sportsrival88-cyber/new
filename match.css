@@ -369,7 +369,7 @@
     transform: rotateX(40deg);
     transform-origin: top center;
     transform-style: preserve-3d;
-    margin: 5% auto -25%;
+    margin: 12% auto -25%;
     width: 88%;
     border-radius: 8px;
     box-shadow: 0 12px 35px rgba(0,0,0,0.6);
@@ -459,13 +459,13 @@
 }
 .os-lu-tok-photo-wrap {
     position: relative;
-    width: 50px; height: 50px;
+    width: 44px; height: 44px;
 }
 .os-lu-tok-photo {
-    width: 50px; height: 50px;
+    width: 44px; height: 44px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid rgba(255,255,255,0.85);
+    border: 2px solid rgba(255,255,255,0.85);
     background: rgba(0,0,0,0.3);
     display: block;
     /* 3D sphere effect */
@@ -475,7 +475,7 @@
         inset 0 -4px 8px rgba(0,0,0,0.35);
 }
 .os-lu-tok-fallback {
-    width: 50px; height: 50px;
+    width: 44px; height: 44px;
     border-radius: 50%;
     /* 3D gradient: brighter top-left, darker bottom-right */
     background: radial-gradient(circle at 35% 30%, rgba(100,100,120,0.9), rgba(20,20,30,0.95));
@@ -535,15 +535,15 @@
 .os-lu-tok-name {
     background: rgba(0,0,0,0.82);
     color: #fff;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     font-weight: 800;
-    padding: 3px 8px;
-    border-radius: 6px;
+    padding: 2px 6px;
+    border-radius: 4px;
     white-space: nowrap;
-    max-width: 85px;
+    max-width: 75px;
     overflow: hidden;
     text-overflow: ellipsis;
-    line-height: 1.5;
+    line-height: 1.4;
     margin-top: 4px;
     text-align: center;
     font-family: var(--font-main);

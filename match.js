@@ -822,7 +822,7 @@ const MatchRenderer = {
         const total = allRows.length;
         const positions = [];
         allRows.forEach((count, ri) => {
-            const yPct = 88 - (ri / (total - 1)) * 80;
+            const yPct = 85 - (ri / (total - 1)) * 68;
             for (let pi = 0; pi < count; pi++) {
                 positions.push({ x: ((pi + 1) / (count + 1)) * 100, y: yPct });
             }
@@ -854,7 +854,7 @@ const MatchRenderer = {
             const ratingHtml = p.ranking ? `<div class="os-lu-tok-ranking" style="background-color:${p.ranking >= 8 ? '#4caf50' : (p.ranking >= 7 ? '#ff9800' : '#ff9800')}">${Number(p.ranking).toFixed(1)}</div>` : '';
             return `<div class="os-lu-tok" style="left:${pos.x}%;top:${pos.y}%;">
                 <div class="os-lu-tok-photo-wrap">
-                    <img class="os-lu-tok-photo" src="${imgUrl}" width="50" height="50"
+                    <img class="os-lu-tok-photo" src="${imgUrl}" width="44" height="44"
                         loading="lazy" decoding="async" alt="${p.name}"
                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                     <div class="os-lu-tok-fallback" style="display:none;">${initials}</div>
