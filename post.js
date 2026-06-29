@@ -426,7 +426,7 @@ const OneSportsMatch = (() => {
                 const { telegram, whatsapp } = MATCH_CONFIG;
                 if (!telegram && !whatsapp) return;
 
-                let html = '<div class="os-post-buttons fade-in">';
+                let html = '<div class="community-join-section" style="display: flex; gap: 15px; margin-top: 25px; margin-bottom: 30px; width: 100%;">';
                 
                 if (telegram) {
                     html += `
