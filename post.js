@@ -515,18 +515,9 @@ const OneSportsMatch = (() => {
 
                 const widgetWrapper = document.getElementById('os-match-widget');
                 
-                // Lazy Load with Intersection Observer
-                const observer = new IntersectionObserver((entries, obs) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            Modules.Widgets.loadIframe(widgetWrapper);
-                            obs.unobserve(entry.target);
-                        }
-                    });
-                }, { rootMargin: '200px 0px' });
-
-                observer.observe(widgetWrapper);
-                window.OneSports.log('Widget Module initialized (Lazy Loading).');
+                // Load widget immediately to maximize performance instead of waiting for scroll
+                Modules.Widgets.loadIframe(widgetWrapper);
+                window.OneSports.log('Widget Module initialized (Immediate Loading).');
             },
 
             loadIframe: (wrapper) => {
@@ -543,7 +534,7 @@ const OneSportsMatch = (() => {
                 iframe.className = 'os-widget-iframe fade-in';
                 iframe.title = "Live Match Center";
                 iframe.setAttribute('allowtransparency', 'true');
-                iframe.style.cssText = "width: 100%; height: 650px; border: none; overflow: hidden; border-radius: 8px; display: block; opacity: 0; transition: opacity 0.5s ease;";
+                iframe.style.cssText = "width: 100%; height: 750px; border: none; overflow-y: auto; border-radius: 8px; display: block; opacity: 0; transition: opacity 0.5s ease;";
 
                 // Encapsulate the widget inside an iframe to prevent its global CSS from leaking and breaking the site's layout.
                 const html = `
@@ -555,7 +546,7 @@ const OneSportsMatch = (() => {
                         <link rel="preconnect" href="https://widgets.365scores.com">
                         <link rel="preload" href="https://widgets.365scores.com/main.js" as="script">
                         <style>
-                            body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+                            body { margin: 0; padding: 0; background: transparent; overflow-y: auto; overflow-x: hidden; }
                             #powered-by { display: none !important; }
                         </style>
                     </head>
