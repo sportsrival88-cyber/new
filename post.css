@@ -20,15 +20,37 @@
 }
 
 /* ==========================================
+   0. MATCH TITLE
+   ========================================== */
+.os-match-h1 {
+    font-family: var(--font-heading);
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    text-align: center;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .os-match-h1 {
+        font-size: 1.6rem;
+    }
+}
+
+/* ==========================================
    1. POSTER BANNER
    ========================================== */
 .os-poster-container {
-    width: 100%;
-    margin-bottom: 25px;
+    width: 80%;
+    margin: 0 auto 20px auto;
+    max-height: 320px;
     border-radius: 16px;
     overflow: hidden;
     position: relative;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 21 / 9;
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
@@ -39,6 +61,22 @@
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+@media (max-width: 1024px) {
+    .os-poster-container {
+        width: 85%;
+        max-height: 280px;
+        aspect-ratio: 16 / 9;
+    }
+}
+
+@media (max-width: 768px) {
+    .os-poster-container {
+        width: 100%;
+        max-height: 220px;
+        aspect-ratio: 16 / 9;
+    }
 }
 
 

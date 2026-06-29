@@ -339,6 +339,19 @@ const OneSportsMatch = (() => {
             }
         },
 
+        MatchTitle: {
+            init: async () => {
+                const container = document.getElementById('onesports-match');
+                const match = window.OneSports.Api.getMatch();
+                if (!container || !match) return;
+
+                const coreTitle = Modules.TitleManager.generateCoreTitle(match);
+                const html = `<h1 class="os-match-h1 fade-in">${coreTitle}</h1>`;
+                container.insertAdjacentHTML('beforeend', html);
+                window.OneSports.log('MatchTitle Module rendered.');
+            }
+        },
+
         MatchInfo: {
             init: async () => {
                 const container = document.getElementById('onesports-match');
@@ -349,40 +362,70 @@ const OneSportsMatch = (() => {
                 const dateStr = dateObj ? dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : 'TBD';
                 const timeStr = dateObj ? dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : 'TBD';
 
+                const homeLogoUrl = match.homeTeam?.logo || '';
+                const awayLogoUrl = match.awayTeam?.logo || '';
+                const compLogo = match.competition?.logo || '';
+                const compName = match.competition?.name || '';
+                const roundText = match.round ? `Round ${match.round}` : '';
+
                 const html = `
-                    <div class="glass-card os-match-info-card fade-in">
-                        ${match.competition ? `
-                        <div class="os-mi-competition">
-                            ${match.competition.logo ? `<img src="${match.competition.logo}" alt="Competition" loading="lazy">` : ''}
-                            <span>${match.competition.name}${match.round ? ` - Round ${match.round}` : ''}</span>
-                        </div>
-                        ` : ''}
-
-                        <div class="os-mi-teams">
-                            <div class="os-mi-team home-team">
-                                ${match.homeTeam?.logo ? `<img src="${match.homeTeam.logo}" alt="${match.homeTeam.name}" loading="lazy">` : ''}
-                                <span>${match.homeTeam?.name || 'Home Team'}</span>
-                            </div>
+                    <div class="match-card fade-in" style="margin-bottom: 30px; cursor: default; border-color: var(--glass-border);">
+                        <!-- Background Flag Fills -->
+                        ${homeLogoUrl ? `<div class="card-bg-flag left" style="background-image: url('${homeLogoUrl}')"></div>` : ''}
+                        ${awayLogoUrl ? `<div class="card-bg-flag right" style="background-image: url('${awayLogoUrl}')"></div>` : ''}
+                        
+                        <!-- Content layer -->
+                        <div style="position: relative; z-index: 2;">
                             
-                            <div class="os-mi-vs">VS</div>
-                            
-                            <div class="os-mi-team away-team">
-                                ${match.awayTeam?.logo ? `<img src="${match.awayTeam.logo}" alt="${match.awayTeam.name}" loading="lazy">` : ''}
-                                <span>${match.awayTeam?.name || 'Away Team'}</span>
+                            <!-- Top Row: Competition & Round -->
+                            <div class="match-header" style="justify-content: center; height: 24px;">
+                                ${compName ? `
+                                <div style="display:flex; align-items:center; position: absolute; left: 0;">
+                                    ${compLogo ? `<img src="${compLogo}" alt="Cup" style="width:16px; height:16px; margin-right:8px; border-radius:2px;">` : ''}
+                                    <span style="text-transform: uppercase; color: var(--primary); font-weight: bold;">${compName}</span>
+                                </div>` : ''}
+                                
+                                <div style="font-family: var(--font-heading); font-weight: 900; letter-spacing: 1px; color: var(--text-muted); font-size: 0.9rem; opacity: 0.5;">
+                                    ONE<span style="color:var(--primary);">SPORTS</span>
+                                </div>
+                                
+                                ${roundText ? `
+                                <div style="position: absolute; right: 0; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">
+                                    ${roundText}
+                                </div>` : ''}
                             </div>
-                        </div>
 
-                        <div class="os-mi-details">
-                            <div class="os-mi-detail-item"><i class="fas fa-calendar-alt"></i> ${dateStr}</div>
-                            <div class="os-mi-detail-item"><i class="fas fa-clock"></i> ${timeStr}</div>
-                            ${match.venue?.stadium ? `
-                            <div class="os-mi-detail-item">
-                                <i class="fas fa-map-marker-alt"></i> ${match.venue.stadium}${match.venue.city ? `, ${match.venue.city}` : ''}
-                            </div>` : ''}
-                            ${match.referee && match.referee !== 'N/A' ? `
-                            <div class="os-mi-detail-item">
-                                <i class="fas fa-gavel"></i> ${match.referee}
-                            </div>` : ''}
+                            <!-- Middle Row: Teams & VS -->
+                            <div class="match-teams-score" style="margin-top: 20px; margin-bottom: 30px;">
+                                <div class="team">
+                                    <img src="${homeLogoUrl}" alt="${match.homeTeam?.name}" style="width: 70px; height: 70px; margin-bottom: 10px;">
+                                    <div class="team-name" style="font-size: 1.2rem; font-weight: 700;">${match.homeTeam?.name || 'Home Team'}</div>
+                                </div>
+
+                                <div class="score-area" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                    <div style="font-family: var(--font-heading); font-size: 1.8rem; font-weight: 900; color: var(--text-main); opacity: 0.8;">VS</div>
+                                </div>
+
+                                <div class="team">
+                                    <img src="${awayLogoUrl}" alt="${match.awayTeam?.name}" style="width: 70px; height: 70px; margin-bottom: 10px;">
+                                    <div class="team-name" style="font-size: 1.2rem; font-weight: 700;">${match.awayTeam?.name || 'Away Team'}</div>
+                                </div>
+                            </div>
+
+                            <!-- Bottom Row: Match Details -->
+                            <div class="os-mi-details">
+                                <div class="os-mi-detail-item"><i class="fas fa-calendar-alt"></i> ${dateStr}</div>
+                                <div class="os-mi-detail-item"><i class="fas fa-clock"></i> ${timeStr}</div>
+                                ${match.venue?.stadium ? `
+                                <div class="os-mi-detail-item">
+                                    <i class="fas fa-map-marker-alt"></i> ${match.venue.stadium}${match.venue.city ? `, ${match.venue.city}` : ''}
+                                </div>` : ''}
+                                ${match.referee && match.referee !== 'N/A' ? `
+                                <div class="os-mi-detail-item">
+                                    <i class="fas fa-gavel"></i> ${match.referee}
+                                </div>` : ''}
+                            </div>
+
                         </div>
                     </div>
                 `;
@@ -785,6 +828,40 @@ const OneSportsMatch = (() => {
             }
         },
 
+        TitleManager: {
+            generateCoreTitle: (match) => {
+                if (!match || !match.homeTeam || !match.awayTeam) return 'Live Match';
+                return `${match.homeTeam.name} vs ${match.awayTeam.name}`;
+            },
+
+            generateBrowserTitle: (match) => {
+                const coreTitle = Modules.TitleManager.generateCoreTitle(match);
+                const compStr = match.competition?.name ? ` | ${match.competition.name}` : '';
+                // Configurable browser title format
+                return `${coreTitle} Live Stream${compStr} | OneSports`;
+            },
+
+            init: async () => {
+                const match = window.OneSports.Api.getMatch();
+                if (!match) return;
+
+                const browserTitle = Modules.TitleManager.generateBrowserTitle(match);
+
+                // Update visible browser tab title
+                document.title = browserTitle;
+
+                // Update existing Open Graph tag
+                const ogTitle = document.querySelector('meta[property="og:title"]');
+                if (ogTitle) ogTitle.setAttribute('content', browserTitle);
+
+                // Update existing Twitter tag
+                const twitterTitle = document.querySelector('meta[name="twitter:title"]');
+                if (twitterTitle) twitterTitle.setAttribute('content', browserTitle);
+
+                window.OneSports.log('TitleManager synchronized titles.', browserTitle);
+            }
+        },
+
         SEO: {
             init: async () => {
                 const match = window.OneSports.Api.getMatch();
@@ -817,7 +894,7 @@ const OneSportsMatch = (() => {
                     return;
                 }
 
-                const eventName = `${homeTeam.name} vs ${awayTeam.name}`;
+                const eventName = Modules.TitleManager.generateCoreTitle(match);
                 const poster = MATCH_CONFIG.poster || 'https://www.onesports.live/favicon.ico';
                 
                 const schema = {
@@ -911,6 +988,7 @@ const OneSportsMatch = (() => {
 
     // Organized rendering sequence for future UI modules
     const renderQueue = [
+        Modules.MatchTitle,
         Modules.Poster,
         Modules.MatchInfo,
         Modules.Buttons,
@@ -988,6 +1066,7 @@ const OneSportsMatch = (() => {
             }
             
             // Initialize independent background modules
+            await Modules.TitleManager.init();
             await Modules.SEO.init();
             await Modules.Ads.init();
         };
