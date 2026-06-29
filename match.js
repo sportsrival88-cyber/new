@@ -818,18 +818,40 @@ const MatchRenderer = {
 
     _luFormationRows(formation) {
         const rows = String(formation).split('-').map(Number).filter(n => n > 0);
-        // rows[0] = defenders, rows[last] = forwards, we prepend GK
-        // In portrait 3D: bottom = near viewer (GK), top = far (attack)
-        // So GK gets highest y%, forwards get lowest y%
         const allRows = [1, ...rows]; // index 0 = GK
         const total = allRows.length;
         const positions = [];
+        
         allRows.forEach((count, ri) => {
-            // ri=0 (GK) → yPct=86%, ri=last (forwards) → yPct=8%
-            const yPct = 82 - (ri / (total - 1)) * 62;
+            let yPct = 50;
+            
+            if (ri === 0) {
+                yPct = 93; // GK
+            } else if (ri === total - 1) {
+                yPct = 15; // Forwards
+            } else {
+                if (total === 4) {
+                    if (ri === 1) yPct = 74;
+                    if (ri === 2) yPct = 45;
+                } else if (total === 5) {
+                    if (ri === 1) yPct = 76;
+                    if (ri === 2) yPct = 58;
+                    if (ri === 3) yPct = 36;
+                } else if (total === 6) {
+                    if (ri === 1) yPct = 78;
+                    if (ri === 2) yPct = 62;
+                    if (ri === 3) yPct = 46;
+                    if (ri === 4) yPct = 32;
+                } else {
+                    yPct = 80 - ((ri - 1) / (total - 3)) * 50;
+                }
+            }
+
             for (let pi = 0; pi < count; pi++) {
-                // x within 14%–86% so tokens stay within pitch width
-                const xPct = 14 + ((pi + 1) / (count + 1)) * 72;
+                let xPct = 50;
+                if (count > 1) {
+                    xPct = 12 + (pi / (count - 1)) * 76;
+                }
                 positions.push({ x: xPct, y: yPct });
             }
         });
