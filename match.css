@@ -374,7 +374,7 @@
     border-radius: 8px;
     box-shadow: 0 12px 35px rgba(0,0,0,0.6);
     position: relative;
-    padding-top: 95%; /* reduced pitch height */
+    padding-top: 135%; /* increased pitch length to prevent overlap */
     background: linear-gradient(180deg,
         #2d7a3a 0%, #337d3f 12%, #2d7a3a 24%,
         #337d3f 36%, #2d7a3a 48%, #337d3f 60%,
