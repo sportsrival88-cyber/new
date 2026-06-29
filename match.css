@@ -366,15 +366,15 @@
 
 /* ── Portrait pitch ── */
 .os-lu-pitch-bg {
-    transform: rotateX(45deg);
+    transform: rotateX(40deg);
     transform-origin: top center;
     transform-style: preserve-3d;
-    margin: 5% auto -30%;
-    width: 90%;
+    margin: 5% auto -25%;
+    width: 88%;
     border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 12px 35px rgba(0,0,0,0.6);
     position: relative;
-    padding-top: 110%; /* full length of pitch */
+    padding-top: 95%; /* reduced pitch height */
     background: linear-gradient(180deg,
         #2d7a3a 0%, #337d3f 12%, #2d7a3a 24%,
         #337d3f 36%, #2d7a3a 48%, #337d3f 60%,
@@ -451,10 +451,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    transform: translate(-50%, -100%) rotateX(-45deg) translateZ(10px);
+    transform: translate(-50%, -100%) rotateX(-40deg) translateZ(10px);
     transform-origin: bottom center;
     z-index: 3;
     cursor: default;
+    filter: drop-shadow(0px 15px 10px rgba(0,0,0,0.7));
 }
 .os-lu-tok-photo-wrap {
     position: relative;
@@ -464,22 +465,30 @@
     width: 68px; height: 68px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2.5px solid rgba(255,255,255,0.8);
+    border: 3px solid rgba(255,255,255,0.85);
     background: rgba(0,0,0,0.3);
     display: block;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.6), 0 0 0 2px rgba(0,0,0,0.3);
+    /* 3D sphere effect */
+    box-shadow:
+        0 -2px 5px rgba(255,255,255,0.3),
+        0 5px 15px rgba(0,0,0,0.75),
+        inset 0 -4px 8px rgba(0,0,0,0.35);
 }
 .os-lu-tok-fallback {
     width: 68px; height: 68px;
     border-radius: 50%;
-    background: rgba(0,0,0,0.55);
-    border: 2.5px solid rgba(255,255,255,0.6);
+    /* 3D gradient: brighter top-left, darker bottom-right */
+    background: radial-gradient(circle at 35% 30%, rgba(100,100,120,0.9), rgba(20,20,30,0.95));
+    border: 3px solid rgba(255,255,255,0.55);
     align-items: center;
     justify-content: center;
-    font-size: 0.85rem;
+    font-size: 1.1rem;
     font-weight: 800;
     color: #fff;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.6);
+    letter-spacing: 0.5px;
+    box-shadow:
+        0 -2px 5px rgba(255,255,255,0.2),
+        0 5px 15px rgba(0,0,0,0.75);
 }
 /* Jersey number badge — bottom-left of circle */
 .os-lu-tok-num-badge {
@@ -522,7 +531,7 @@
 }
 /* Removed os-lu-tok-num (old small badge above name) — replaced by os-lu-tok-num-badge */
 .os-lu-tok-name {
-    background: rgba(0,0,0,0.78);
+    background: rgba(0,0,0,0.82);
     color: #fff;
     font-size: 0.8rem;
     font-weight: 800;
@@ -537,6 +546,7 @@
     text-align: center;
     font-family: var(--font-main);
     letter-spacing: 0.2px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
 }
 
 /* Event icons on pitch */

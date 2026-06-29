@@ -751,8 +751,14 @@ const MatchRenderer = {
     // ── Lineup helpers ──────────────────────────────────────────────────────
 
     _luGetPlayerImageUrl(athleteId, imageVersion) {
-        const v = imageVersion || 1;
+        const v = imageVersion && imageVersion > 0 ? imageVersion : 1;
         return `https://imagecache.365scores.com/image/upload/f_png,w_200,h_200,c_fill,g_face,q_auto:eco,d_Athletes:default1.png/v${v}/Athletes/${athleteId}`;
+    },
+
+    // Generate an onerror chain that tries v1 then falls back to initials
+    _luImgOnerror(athleteId, initials, fallbackEl) {
+        // Try loading without version constraint via default placeholder
+        return `this.onerror=null;this.src='https://imagecache.365scores.com/image/upload/f_png,w_200,h_200,c_fill,g_face,q_auto:eco,d_Athletes:default1.png/v1/Athletes/${athleteId}';this.onerror=function(){this.style.display='none';this.nextElementSibling.style.display='flex';};`
     },
 
     _luParseTeam(competitor, members, events) {
@@ -785,19 +791,27 @@ const MatchRenderer = {
         lineup.members.forEach(member => {
             const athlete = members ? members.find(a => a.id === member.id) : null;
             const name = Security.escapeHTML(athlete ? athlete.name : (member.name || 'Unknown'));
-            const num  = String(athlete && athlete.jerseyNum ? athlete.jerseyNum : (member.jerseyNumber || ''));
-            const pos  = Security.escapeHTML(member.position ? member.position.name : '');
-            const isCap = member.statusText === 'Captain' || (athlete && athlete.isCaptain);
+            const num  = String(athlete && athlete.jerseyNum !== undefined ? athlete.jerseyNum : (member.jerseyNumber || ''));
+            const pos  = Security.escapeHTML(member.position ? member.position.name : (member.positionName || ''));
+            const isCap = member.statusText === 'Captain' || (athlete && athlete.isCaptain) || member.isCaptain;
             const athleteId = member.id;
-            const imageVersion = athlete ? (athlete.imageVersion || athlete.imgVer || 1) : 1;
+            // Try every known field 365scores uses for athlete image version
+            const imageVersion = (athlete && (athlete.imageVersion || athlete.imgVer || athlete.imageVer))
+                || member.imageVersion || member.imgVer || 1;
             const playerEvs  = evMap[athleteId] || [];
             const isSubOn    = playerEvs.includes('subbed-on');
             const isSubOff   = playerEvs.includes('subbed-off');
             const subTime    = (playerEvs.find(e => e.startsWith('subtime:')) || '').replace('subtime:', '');
             const p = { name, num, pos, isCap, athleteId, imageVersion, playerEvs, isSubOn, isSubOff, subTime, member };
-            if (member.status === 1)      starters.push(p);
-            else if (member.status === 2) subs.push(p);
-            else if (member.status === 4) coach = name;
+            // Coach detection: status 4, or statusText containing coach/manager
+            const statusStr = String(member.statusText || '').toLowerCase();
+            if (member.status === 4 || statusStr.includes('coach') || statusStr.includes('manager')) {
+                coach = name;
+            } else if (member.status === 1) {
+                starters.push(p);
+            } else if (member.status === 2) {
+                subs.push(p);
+            }
         });
         return { starters, subs, coach, formation: lineup.formation || '' };
     },
@@ -821,15 +835,15 @@ const MatchRenderer = {
         return parsed.starters.map((p, i) => {
             const pos = positions[i] || { x: 50, y: 50 };
             const imgUrl = this._luGetPlayerImageUrl(p.athleteId, p.imageVersion);
-            // Use last name, but if it's 1 word use full name
-            const parts = p.name.split(' ');
-            const shortName = p.name;
-            
-            let initials = '?';
-            if (p.name) {
-                const nParts = p.name.split(' ');
-                initials = nParts.length > 1 ? (nParts[0][0] + nParts[nParts.length-1][0]).toUpperCase() : nParts[0].substring(0,2).toUpperCase();
-            }
+
+            // Full name shown — last name only if name has multiple parts (keeps it readable on pitch)
+            const nameParts = p.name.split(' ');
+            const displayName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : p.name;
+
+            // Initials for fallback circle
+            const initials = nameParts.length > 1
+                ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+                : p.name.substring(0, 2).toUpperCase();
 
             const evIcons = [];
             if (p.playerEvs.includes('goal'))   evIcons.push('<i class="fas fa-futbol os-lu-ev-goal"></i>');
@@ -842,18 +856,22 @@ const MatchRenderer = {
                     <img class="os-lu-tok-photo" src="${imgUrl}" width="58" height="58"
                         loading="lazy" decoding="async" alt="${p.name}"
                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                    <div class="os-lu-tok-fallback" style="display:none;">${p.num || initials}</div>
+                    <div class="os-lu-tok-fallback" style="display:none;">${initials}</div>
                     ${p.num ? `<div class="os-lu-tok-num-badge">${p.num}</div>` : ''}
                     ${p.isCap ? '<div class="os-lu-tok-cap">C</div>' : ''}
                     ${evHtml}
                 </div>
-                <div class="os-lu-tok-name">${shortName}</div>
+                <div class="os-lu-tok-name">${displayName}</div>
             </div>`;
         }).join('');
     },
 
     _luSubRow(p) {
         const imgUrl = this._luGetPlayerImageUrl(p.athleteId, p.imageVersion);
+        const nameParts = p.name.split(' ');
+        const initials = nameParts.length > 1
+            ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+            : p.name.substring(0, 2).toUpperCase();
         const evs = [];
         if (p.playerEvs.includes('goal'))   evs.push('<i class="fas fa-futbol os-lu-ev-goal"></i>');
         if (p.playerEvs.includes('yellow')) evs.push('<i class="fas fa-square os-lu-ev-yellow"></i>');
@@ -861,10 +879,10 @@ const MatchRenderer = {
         if (p.isSubOn) evs.push(`<i class="fas fa-arrow-up os-lu-ev-subon"></i>${p.subTime ? `<span class="os-lu-subtime">${p.subTime}'</span>` : ''}`);
         return `<div class="os-lu-sub-row${p.isSubOn ? ' subbed-on' : ''}">
             <div class="os-lu-sub-photo-wrap">
-                <img class="os-lu-sub-photo" src="${imgUrl}" width="36" height="36"
+                <img class="os-lu-sub-photo" src="${imgUrl}" width="40" height="40"
                     loading="lazy" decoding="async" alt="${p.name}"
                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <div class="os-lu-sub-photo-fallback" style="display:none;">${p.num || initials}</div>
+                <div class="os-lu-sub-photo-fallback" style="display:none;">${initials}</div>
             </div>
             <div class="os-lu-sub-info">
                 <span class="os-lu-sub-name">${p.name}${p.isCap ? ' <span class="os-lu-cap">C</span>' : ''}</span>
@@ -926,21 +944,40 @@ const MatchRenderer = {
         const homePanel = this._luBuildTeamPanel(hc, homeParsed, homeLogo);
         const awayPanel = this._luBuildTeamPanel(ac, awayParsed, awayLogo);
         const hn = Security.escapeHTML(hc.name), an = Security.escapeHTML(ac.name);
+
+        // Define switcher as a named global so onclick works reliably across template contexts
+        window._osLuSwitch = function(side) {
+            const hp = document.getElementById('os-lu-home-panel');
+            const ap = document.getElementById('os-lu-away-panel');
+            const hb = document.getElementById('os-lu-sw-home');
+            const ab = document.getElementById('os-lu-sw-away');
+            if (!hp || !ap) return;
+            if (side === 'home') {
+                hp.style.display = 'block'; ap.style.display = 'none';
+                if (hb) hb.classList.add('active');
+                if (ab) ab.classList.remove('active');
+            } else {
+                ap.style.display = 'block'; hp.style.display = 'none';
+                if (ab) ab.classList.add('active');
+                if (hb) hb.classList.remove('active');
+            }
+        };
+
         const html = `<div class="os-lu-outer">
             <div class="os-lu-top-bar">
                 <span class="os-mi-header" style="margin:0;border:none;padding:0;">Match Lineups</span>
                 <div class="os-lu-switcher">
-                    <button class="os-lu-sw-btn active" id="os-lu-sw-home" onclick="document.getElementById('os-lu-sw-home').classList.add('active');document.getElementById('os-lu-sw-away').classList.remove('active');document.getElementById('os-lu-home-panel').style.display='';document.getElementById('os-lu-away-panel').style.display='none';">
+                    <button class="os-lu-sw-btn active" id="os-lu-sw-home" onclick="window._osLuSwitch('home')">
                         <img src="${homeLogo}" width="16" height="16" style="object-fit:contain;vertical-align:middle;margin-right:4px;" alt="">
                         ${hn} <span class="os-lu-sw-form">${homeParsed.formation}</span>
                     </button>
-                    <button class="os-lu-sw-btn" id="os-lu-sw-away" onclick="document.getElementById('os-lu-sw-away').classList.add('active');document.getElementById('os-lu-sw-home').classList.remove('active');document.getElementById('os-lu-away-panel').style.display='';document.getElementById('os-lu-home-panel').style.display='none';">
+                    <button class="os-lu-sw-btn" id="os-lu-sw-away" onclick="window._osLuSwitch('away')">
                         <img src="${awayLogo}" width="16" height="16" style="object-fit:contain;vertical-align:middle;margin-right:4px;" alt="">
                         ${an} <span class="os-lu-sw-form">${awayParsed.formation}</span>
                     </button>
                 </div>
             </div>
-            <div id="os-lu-home-panel">${homePanel}</div>
+            <div id="os-lu-home-panel" style="display:block;">${homePanel}</div>
             <div id="os-lu-away-panel" style="display:none;">${awayPanel}</div>
         </div>`;
         const frag = document.createRange().createContextualFragment(html);
