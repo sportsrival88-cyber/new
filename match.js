@@ -826,7 +826,7 @@ const MatchRenderer = {
         const positions = [];
         allRows.forEach((count, ri) => {
             // ri=0 (GK) → yPct=86%, ri=last (forwards) → yPct=8%
-            const yPct = 86 - (ri / (total - 1)) * 78;
+            const yPct = 82 - (ri / (total - 1)) * 62;
             for (let pi = 0; pi < count; pi++) {
                 // x within 14%–86% so tokens stay within pitch width
                 const xPct = 14 + ((pi + 1) / (count + 1)) * 72;
@@ -850,6 +850,7 @@ const MatchRenderer = {
 
             // z-index: players near viewer (high y%) appear on top
             const zIdx = Math.round(pos.y);
+            const ratingHtml = p.ranking ? \`<div class="os-lu-tok-ranking" style="background-color:${p.ranking >= 8 ? '#4caf50' : (p.ranking >= 7 ? '#ff9800' : '#ff9800')}">${Number(p.ranking).toFixed(1)}</div>\` : '';
 
             const evIcons = [];
             if (p.playerEvs.includes('goal'))   evIcons.push('<i class="fas fa-futbol os-lu-ev-goal"></i>');
@@ -860,13 +861,14 @@ const MatchRenderer = {
 
             return `<div class="os-lu-tok" style="left:${pos.x}%;top:${pos.y}%;z-index:${zIdx};">
                 <div class="os-lu-tok-photo-wrap">
-                    <img class="os-lu-tok-photo" src="${imgUrl}" width="58" height="58"
+                    <img class="os-lu-tok-photo" src="${imgUrl}" width="44" height="44"
                         loading="lazy" decoding="async" alt="${p.name}"
                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                     <div class="os-lu-tok-fallback" style="display:none;">${initials}</div>
                     ${p.num ? `<div class="os-lu-tok-num-badge">${p.num}</div>` : ''}
                     ${p.isCap ? '<div class="os-lu-tok-cap">C</div>' : ''}
                     ${evHtml}
+                    ${ratingHtml}
                 </div>
                 <div class="os-lu-tok-name">${displayName}</div>
             </div>`;

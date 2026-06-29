@@ -209,8 +209,7 @@
 }
 
 .os-ls-logo {
-    width: 50px;
-    height: 50px;
+    width: 44px; height: 44px;
     object-fit: contain;
 }
 
@@ -387,7 +386,7 @@
     transform-origin: top center;
     transform-style: preserve-3d;
     /* centre horizontally, negative bottom pulls subs closer */
-    margin: 6% auto -42%;
+    margin: 12% auto -42%;
     width: 84%;
     border-radius: 6px;
     box-shadow: 0 14px 40px rgba(0,0,0,0.7);
@@ -477,10 +476,10 @@
 }
 .os-lu-tok-photo-wrap {
     position: relative;
-    width: 58px; height: 58px;
+    width: 44px; height: 44px;
 }
 .os-lu-tok-photo {
-    width: 58px; height: 58px;
+    width: 44px; height: 44px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid rgba(255,255,255,0.85);
@@ -492,7 +491,7 @@
         inset 0 -4px 8px rgba(0,0,0,0.35);
 }
 .os-lu-tok-fallback {
-    width: 58px; height: 58px;
+    width: 44px; height: 44px;
     border-radius: 50%;
     background: radial-gradient(circle at 35% 30%, rgba(100,100,120,0.9), rgba(20,20,30,0.95));
     border: 3px solid rgba(255,255,255,0.55);
@@ -1608,8 +1607,7 @@
     box-shadow: 0 8px 25px rgba(0,0,0,0.4);
 }
 .os-sf-icon-wrap {
-    width: 50px;
-    height: 50px;
+    width: 44px; height: 44px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -1716,8 +1714,7 @@
             justify-content: space-between;
         }
         .os-hero-logo {
-            width: 50px;
-            height: 50px;
+            width: 44px; height: 44px;
         }
         .os-hero-score {
             font-size: 2rem;
