@@ -534,9 +534,38 @@ const OneSportsMatch = (() => {
                 iframe.className = 'os-widget-iframe fade-in';
                 iframe.title = "Live Match Center";
                 iframe.setAttribute('allowtransparency', 'true');
-                iframe.style.cssText = "width: 100%; min-height: 600px; height: 750px; border: none; overflow: hidden; border-radius: 8px; display: block; opacity: 0; transition: height 0.3s ease, opacity 0.5s ease;";
+                // Start with no height — it will be set dynamically via postMessage
+                iframe.style.cssText = "width: 100%; height: 500px; border: none; border-radius: 8px; display: block; opacity: 0; transition: height 0.4s ease, opacity 0.5s ease; overflow: hidden;";
 
-                // Encapsulate the widget inside an iframe to prevent its global CSS from leaking and breaking the site's layout.
+                // The resize reporter runs INSIDE the iframe and uses postMessage to
+                // communicate its real content height back to us — this is the ONLY
+                // loop-proof way to read a cross-origin iframe's content size.
+                const resizeReporterScript = `
+                    <script>
+                    (function() {
+                        var lastH = 0;
+                        function report() {
+                            // Measure the real content height of the widget div
+                            var el = document.querySelector('[data-widget-id]');
+                            var h = el ? el.getBoundingClientRect().height : document.body.scrollHeight;
+                            if (h > 100 && Math.abs(h - lastH) > 2) {
+                                lastH = h;
+                                window.parent.postMessage({ type: 'os-widget-height', height: h }, '*');
+                            }
+                        }
+                        // Run on DOM changes
+                        var observer = new MutationObserver(report);
+                        observer.observe(document.body, { childList: true, subtree: true, attributes: false });
+                        // Also poll every 800ms to catch tab switches (lineups, stats, etc.)
+                        setInterval(report, 800);
+                        // Run once after a short delay to catch initial render
+                        setTimeout(report, 500);
+                        setTimeout(report, 1500);
+                        setTimeout(report, 3000);
+                    })();
+                    <\/script>
+                `;
+
                 const html = `
                     <!DOCTYPE html>
                     <html lang="en">
@@ -544,9 +573,8 @@ const OneSportsMatch = (() => {
                         <meta charset="UTF-8">
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
                         <link rel="preconnect" href="https://widgets.365scores.com">
-                        <link rel="preload" href="https://widgets.365scores.com/main.js" as="script">
                         <style>
-                            body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+                            html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
                             #powered-by { display: none !important; }
                         </style>
                     </head>
@@ -560,11 +588,24 @@ const OneSportsMatch = (() => {
                              data-widget-type="game">
                         </div>
                         <scr` + `ipt src="https://widgets.365scores.com/main.js"></scr` + `ipt>
+                        ${resizeReporterScript}
                     </body>
                     </html>
                 `;
 
                 iframe.srcdoc = html;
+
+                // Listen for height reports from inside the iframe
+                const heightListener = (event) => {
+                    if (event.data && event.data.type === 'os-widget-height') {
+                        const h = Math.ceil(event.data.height);
+                        if (h > 100) {
+                            iframe.style.height = h + 'px';
+                            wrapper.style.minHeight = h + 'px';
+                        }
+                    }
+                };
+                window.addEventListener('message', heightListener);
 
                 let hasLoaded = false;
                 iframe.onload = () => {
@@ -573,38 +614,7 @@ const OneSportsMatch = (() => {
                     const skeleton = wrapper.querySelector('.os-widget-skeleton');
                     if (skeleton) skeleton.style.display = 'none';
                     iframe.style.opacity = '1';
-                    window.OneSports.log('365Scores Widget encapsulated successfully.');
-
-                    // Auto-resize logic based on internal React widget size
-                    try {
-                        const iframeDoc = iframe.contentDocument;
-                        const updateHeight = () => {
-                            // 365Scores generates an inner iframe and dynamically sets its height.
-                            // We can perfectly mirror this height to our wrapper to prevent infinite loops.
-                            const innerIframe = iframeDoc.querySelector('iframe');
-                            if (innerIframe && innerIframe.style.height) {
-                                iframe.style.height = innerIframe.style.height;
-                                return;
-                            }
-                            
-                            // Fallback for native div injection
-                            const widgetDiv = iframeDoc.querySelector('[data-widget-id]');
-                            if (widgetDiv) {
-                                // Prevent infinite loops by not artificially adding to the height
-                                const contentHeight = widgetDiv.scrollHeight;
-                                if (contentHeight > 100) {
-                                    iframe.style.height = contentHeight + 'px';
-                                }
-                            }
-                        };
-                        
-                        const bodyObserver = new MutationObserver(updateHeight);
-                        bodyObserver.observe(iframeDoc.body, { childList: true, subtree: true, attributes: true });
-                        
-                        setInterval(updateHeight, 1000);
-                    } catch (e) {
-                        window.OneSports.log('Auto-resize observer failed', e);
-                    }
+                    window.OneSports.log('365Scores Widget loaded via postMessage auto-resize.');
                 };
 
                 // Fallback timeout in case iframe fails silently
