@@ -574,137 +574,35 @@ const OneSportsMatch = (() => {
                 const isLightMode = document.body.classList.contains('light-mode');
                 const themeParam = isLightMode ? 'light' : 'dark';
                 
-                const iframe = document.createElement('iframe');
-                iframe.className = 'os-widget-iframe fade-in';
-                iframe.title = "Live Match Center";
-                iframe.setAttribute('allowtransparency', 'true');
-                iframe.setAttribute('scrolling', 'no');
-                // height starts at 0 — set dynamically by postMessage; no fixed floor
-                iframe.style.cssText = "width: 100%; height: 0; border: none; border-radius: 8px; display: block; opacity: 0; transition: height 0.35s ease, opacity 0.5s ease;";
-
-                // The resize reporter runs INSIDE the iframe and uses postMessage to
-                // communicate its real content height back to us — this is the ONLY
-                // loop-proof way to read a cross-origin iframe's content size.
-                const resizeReporterScript = `
-                    <script>
-                    (function() {
-                        var lastH = 0;
-                        var stableCount = 0;
-                        var intervalId = null;
-
-                        function report() {
-                            var el = document.querySelector('[data-widget-id]');
-                            if (!el) return;
-
-                            var h = 0;
-                            // 365Scores actually generates an inner iframe for this widget and 
-                            // calculates the exact necessary height, setting it as an inline style.
-                            // Reading this is the only 100% loop-proof method.
-                            var innerIframe = el.querySelector('iframe');
-                            if (innerIframe && innerIframe.style.height) {
-                                h = parseFloat(innerIframe.style.height);
-                            } else {
-                                // Fallback if no inner iframe is used
-                                h = el.getBoundingClientRect().height;
-                            }
-
-                            if (h < 50) return;
-                            if (Math.abs(h - lastH) < 2) {
-                                stableCount++;
-                                if (stableCount >= 8 && intervalId) {
-                                    clearInterval(intervalId);
-                                    intervalId = null;
-                                }
-                                return;
-                            }
-                            stableCount = 0;
-                            lastH = h;
-                            window.parent.postMessage({ type: 'os-widget-height', height: h }, '*');
-                        }
-
-                        // Watch DOM mutations (tab switches, lazy content)
-                        new MutationObserver(function() {
-                            stableCount = 0; // reset stability on any DOM change
-                            report();
-                        }).observe(document.body, { childList: true, subtree: true });
-
-                        // Poll at 500ms until stable, then stop
-                        intervalId = setInterval(report, 500);
-
-                        // Fire on resize (e.g. mobile rotation)
-                        window.addEventListener('resize', function() { stableCount = 0; report(); });
-
-                        // Initial fires to catch progressive widget render
-                        [300, 800, 1500, 2500].forEach(function(t) { setTimeout(report, t); });
-                    })();
-                    <\/script>
+                // Remove the skeleton immediately as we inject
+                const skeleton = wrapper.querySelector('.os-widget-skeleton');
+                if (skeleton) skeleton.style.display = 'none';
+                
+                // Inject the 365Scores widget container natively into the DOM
+                // This eliminates ALL height feedback loops because 365Scores' script
+                // will manage its own height perfectly without conflicting with an iframe.
+                wrapper.innerHTML = `
+                    <div data-allow-premium-data="true" 
+                         data-entity-id="${entityId}" 
+                         data-lang="en-US" 
+                         data-support-top-games="true" 
+                         data-theme="${themeParam}" 
+                         data-widget-id="0.fwq61qa3fvf" 
+                         data-widget-type="game">
+                    </div>
                 `;
 
-                const html = `
-                    <!DOCTYPE html>
-                    <html lang="en">
-                    <head>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <link rel="preconnect" href="https://widgets.365scores.com">
-                        <style>
-                            html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
-                            #powered-by { display: none !important; }
-                        </style>
-                    </head>
-                    <body>
-                        <div data-allow-premium-data="true" 
-                             data-entity-id="${entityId}" 
-                             data-lang="en-US" 
-                             data-support-top-games="true" 
-                             data-theme="${themeParam}" 
-                             data-widget-id="0.fwq61qa3fvf" 
-                             data-widget-type="game">
-                        </div>
-                        <scr` + `ipt src="https://widgets.365scores.com/main.js"></scr` + `ipt>
-                        ${resizeReporterScript}
-                    </body>
-                    </html>
-                `;
-
-                iframe.srcdoc = html;
-
-                // Listen for height reports from inside the iframe
-                const heightListener = (event) => {
-                    if (!event.data || event.data.type !== 'os-widget-height') return;
-                    const h = Math.ceil(event.data.height);
-                    if (h < 100) return;
-                    // Only set the iframe height — let the wrapper height:auto in CSS
-                    // flow naturally. Setting wrapper.style.height caused a second source
-                    // of truth that conflicted with the CSS and caused infinite growth.
-                    iframe.style.height = h + 'px';
-                };
-                window.addEventListener('message', heightListener);
-
-                let hasLoaded = false;
-                iframe.onload = () => {
-                    if (hasLoaded) return;
-                    hasLoaded = true;
-                    const skeleton = wrapper.querySelector('.os-widget-skeleton');
-                    if (skeleton) skeleton.style.display = 'none';
-                    iframe.style.opacity = '1';
-                    // Give it a fallback height if postMessage hasn't fired yet
-                    if (parseInt(iframe.style.height) < 100) {
-                        iframe.style.height = '500px';
-                        wrapper.style.height = '500px';
-                    }
-                    window.OneSports.log('365Scores Widget loaded via postMessage auto-resize.');
-                };
-
-                // Fallback timeout in case iframe fails silently
-                setTimeout(() => {
-                    if (!hasLoaded) {
-                        hasLoaded = true;
-                        Modules.Widgets.renderError(wrapper);
-                    }
-                }, 12000);
-
-                wrapper.appendChild(iframe);
+                // Load the 365Scores script natively
+                // Check if it's already loaded to prevent duplicate scripts if called twice
+                if (!document.querySelector('script[src="https://widgets.365scores.com/main.js"]')) {
+                    const script = document.createElement('script');
+                    script.src = "https://widgets.365scores.com/main.js";
+                    script.async = true;
+                    script.onerror = () => Modules.Widgets.renderError(wrapper);
+                    document.body.appendChild(script);
+                }
+                
+                window.OneSports.log('365Scores Widget injected natively (no iframe wrapper).');
             },
 
             renderError: (wrapper) => {
