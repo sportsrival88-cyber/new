@@ -19,6 +19,11 @@
     }
 }
 
+/* Global Link Hover Override for Post Pages */
+a:hover {
+    text-decoration: none !important;
+}
+
 /* ==========================================
    0. BLOGGER TITLE OVERRIDE
    ========================================== */
