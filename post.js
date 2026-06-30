@@ -593,18 +593,24 @@ const OneSportsMatch = (() => {
                         var intervalId = null;
 
                         function report() {
-                            // getBoundingClientRect().height is the ONLY safe measurement:
-                            // it returns the rendered visual height, never the scrollable
-                            // overflow. scrollHeight causes feedback loops because it includes
-                            // the element's own scrollable area which grows as we set iframe height.
                             var el = document.querySelector('[data-widget-id]');
                             if (!el) return;
-                            var h = el.getBoundingClientRect().height;
+
+                            var h = 0;
+                            // 365Scores actually generates an inner iframe for this widget and 
+                            // calculates the exact necessary height, setting it as an inline style.
+                            // Reading this is the only 100% loop-proof method.
+                            var innerIframe = el.querySelector('iframe');
+                            if (innerIframe && innerIframe.style.height) {
+                                h = parseFloat(innerIframe.style.height);
+                            } else {
+                                // Fallback if no inner iframe is used
+                                h = el.getBoundingClientRect().height;
+                            }
+
                             if (h < 50) return;
                             if (Math.abs(h - lastH) < 2) {
                                 stableCount++;
-                                // Stop polling after 8 stable reads (saves CPU)
-                                // MutationObserver will still catch tab switches / expansions
                                 if (stableCount >= 8 && intervalId) {
                                     clearInterval(intervalId);
                                     intervalId = null;
