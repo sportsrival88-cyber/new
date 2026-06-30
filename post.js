@@ -319,36 +319,42 @@ const OneSportsMatch = (() => {
     const Modules = {
         Poster: {
             /**
-             * Extracts the Blogger post thumbnail — the first uploaded image in the post.
-             * Priority order:
-             *   1. og:image meta tag (Blogger sets this to the post's first image at full res)
-             *   2. First <img> inside the Blogger post body (.post-body or article)
-             *   3. data-poster attribute on the widget container
-             *   4. Generic placeholder
+             * Finds the Blogger-uploaded thumbnail and HIDES the original in the post body
+             * so it does not render twice (once in body, once as hero).
+             *
+             * Blogger wraps every uploaded image in a <div class="separator"> element.
+             * We target that specifically, extract the URL, then set display:none on
+             * the wrapper so only the hero version is visible.
+             *
+             * Priority:
+             *   1. First .separator img in the post body (standard Blogger upload)
+             *   2. og:image meta tag
+             *   3. data-poster fallback
+             *   4. Placeholder
              */
             getBloggerThumbnail: () => {
-                // 1. og:image — Blogger automatically sets this to the post's first image
-                const ogImage = document.querySelector('meta[property="og:image"]');
-                if (ogImage && ogImage.content) {
-                    // Upgrade to the highest available resolution from Blogger's image CDN
-                    return ogImage.content.replace(/\/s\d+(-[a-z])?\//, '/s2400/');
-                }
-
-                // 2. First real image inside the post body (skip logos/icons by checking size)
-                const postBody = document.querySelector('.post-body, .entry-content, article .post-body-container');
-                if (postBody) {
-                    const imgs = postBody.querySelectorAll('img');
-                    for (const img of imgs) {
+                // 1. Blogger standard upload: <div class="separator"><a><img .../></a></div>
+                const separators = document.querySelectorAll('.post-body .separator, .entry-content .separator');
+                for (const sep of separators) {
+                    const img = sep.querySelector('img');
+                    if (img) {
                         const src = img.src || img.getAttribute('data-src') || '';
-                        // Skip tiny icons and tracker pixels
-                        if (src && !src.includes('favicon') && !src.includes('pixel') && 
-                            (img.naturalWidth > 100 || img.width > 100 || img.getAttribute('width') > 100)) {
-                            return src.replace(/\/s\d+(-[a-z])?\//, '/s2400/');
+                        if (src && src.includes('googleusercontent.com')) {
+                            // Hide the original separator so the image only shows in the hero
+                            sep.style.display = 'none';
+                            // Upgrade Blogger CDN URL to max resolution
+                            return src.replace(/\/s\d+(-[a-z])?\//, '/s0/');
                         }
                     }
                 }
 
-                // 3 & 4. Fall back to data-poster or placeholder
+                // 2. og:image fallback — Blogger sets this automatically to the first post image
+                const ogImage = document.querySelector('meta[property="og:image"]');
+                if (ogImage && ogImage.content && ogImage.content.includes('googleusercontent.com')) {
+                    return ogImage.content.replace(/\/s\d+(-[a-z])?\//, '/s0/');
+                }
+
+                // 3 & 4. Fall back to data-poster or placeholder (handled in init)
                 return null;
             },
 
@@ -361,20 +367,21 @@ const OneSportsMatch = (() => {
                     ? `${match.homeTeam.name} vs ${match.awayTeam.name} Poster` 
                     : 'Match Poster';
 
-                // Use Blogger thumbnail first, then data-poster fallback, then placeholder
+                // Use Blogger thumbnail first (also hides the original), then fallbacks
                 const posterUrl = Modules.Poster.getBloggerThumbnail()
                     || MATCH_CONFIG.poster 
                     || 'https://placehold.co/2100x900/1a1a24/ffffff?text=OneSports+Live';
 
                 const html = `
                     <div class="os-poster-container fade-in">
-                        <img src="${posterUrl}" alt="${altText}" class="os-poster-image" loading="lazy" fetchpriority="high">
+                        <img src="${posterUrl}" alt="${altText}" class="os-poster-image" loading="eager" fetchpriority="high">
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', html);
                 window.OneSports.log('Poster Module rendered. Source: ' + posterUrl);
             }
         },
+
 
         MatchInfo: {
             init: async () => {
