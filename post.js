@@ -1177,6 +1177,23 @@ const OneSportsMatch = (() => {
             if (!container) {
                 throw new Error('CRITICAL ERROR: "#onesports-match" element not found in DOM.');
             }
+
+            // CRITICAL FIX: If the user accidentally left an unclosed <a> tag in their Blogger
+            // editor (or linked the entire post), the entire page becomes a clickable link.
+            // We forcefully neutralize the broken link and break the container out of it.
+            let parentLink = container.closest('a');
+            while (parentLink) {
+                // Remove href so it completely stops acting like a link (removes pointer & underline)
+                parentLink.removeAttribute('href');
+                parentLink.style.textDecoration = 'none';
+                parentLink.style.cursor = 'default';
+                
+                // Move container out of the link to be absolutely safe
+                parentLink.parentNode.insertBefore(container, parentLink.nextSibling);
+                
+                // Check if there are nested accidental links
+                parentLink = container.closest('a');
+            }
             
             buildConfig(container);
             
