@@ -491,15 +491,15 @@ const OneSportsMatch = (() => {
                 // Create the widget wrapper with injected fallback styles
                 const widgetWrapperHTML = `
                     <style>
-                        /* Injected Widget Styles to bypass cache */
-                        .os-widget-container { width: 100%; margin-top: 25px; margin-bottom: 40px; position: relative; min-height: 400px; overflow: hidden; }
-                        .os-standings-container { width: 100%; margin-top: 25px; margin-bottom: 40px; position: relative; min-height: 500px; overflow: hidden; }
-                        .os-widget-iframe { width: 100%; min-height: 400px; border: none; opacity: 0; transition: opacity 0.5s ease-in-out; z-index: 1; position: relative; display: block; }
+                        /* Injected Widget Styles */
+                        .os-widget-container { width: 100%; margin-top: 25px; margin-bottom: 40px; position: relative; height: auto; overflow: visible; transition: height 0.35s ease; }
+                        .os-standings-container { width: 100%; margin-top: 25px; margin-bottom: 40px; position: relative; height: auto; overflow: visible; }
+                        .os-widget-iframe { width: 100%; height: 0; border: none; opacity: 0; transition: height 0.35s ease, opacity 0.5s ease; display: block; }
                         .os-widget-iframe.loaded { opacity: 1; }
-                        .os-widget-skeleton, .os-standings-skeleton { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; gap: 15px; padding: 20px; z-index: 2; background: rgba(0,0,0,0.2); }
-                        .os-skeleton-row { width: 100%; height: 60px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; animation: os-shimmer 1.5s infinite linear; }
+                        .os-widget-skeleton { position: absolute; top: 0; left: 0; width: 100%; height: 220px; display: flex; flex-direction: column; gap: 15px; padding: 20px; z-index: 2; background: rgba(0,0,0,0.2); border-radius: 12px; }
+                        .os-skeleton-row { width: 100%; height: 60px; background: rgba(255,255,255,0.03); border-radius: 8px; animation: os-shimmer 1.5s infinite linear; }
                         .os-skeleton-row:first-child { height: 150px; }
-                        body.light-mode .os-skeleton-row { background: rgba(0, 0, 0, 0.04); }
+                        body.light-mode .os-skeleton-row { background: rgba(0,0,0,0.04); }
                         @keyframes os-shimmer { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
                     </style>
                     <div id="os-match-widget" class="glass-card os-widget-container fade-in" aria-label="Live Match Center">
@@ -534,8 +534,9 @@ const OneSportsMatch = (() => {
                 iframe.className = 'os-widget-iframe fade-in';
                 iframe.title = "Live Match Center";
                 iframe.setAttribute('allowtransparency', 'true');
-                // Start with no height — it will be set dynamically via postMessage
-                iframe.style.cssText = "width: 100%; height: 500px; border: none; border-radius: 8px; display: block; opacity: 0; transition: height 0.4s ease, opacity 0.5s ease; overflow: hidden;";
+                iframe.setAttribute('scrolling', 'no');
+                // height starts at 0 — set dynamically by postMessage; no fixed floor
+                iframe.style.cssText = "width: 100%; height: 0; border: none; border-radius: 8px; display: block; opacity: 0; transition: height 0.35s ease, opacity 0.5s ease;";
 
                 // The resize reporter runs INSIDE the iframe and uses postMessage to
                 // communicate its real content height back to us — this is the ONLY
@@ -545,23 +546,21 @@ const OneSportsMatch = (() => {
                     (function() {
                         var lastH = 0;
                         function report() {
-                            // Measure the real content height of the widget div
                             var el = document.querySelector('[data-widget-id]');
-                            var h = el ? el.getBoundingClientRect().height : document.body.scrollHeight;
-                            if (h > 100 && Math.abs(h - lastH) > 2) {
+                            var h = el ? el.scrollHeight : document.body.scrollHeight;
+                            if (h > 50 && Math.abs(h - lastH) > 2) {
                                 lastH = h;
                                 window.parent.postMessage({ type: 'os-widget-height', height: h }, '*');
                             }
                         }
-                        // Run on DOM changes
-                        var observer = new MutationObserver(report);
-                        observer.observe(document.body, { childList: true, subtree: true, attributes: false });
-                        // Also poll every 800ms to catch tab switches (lineups, stats, etc.)
-                        setInterval(report, 800);
-                        // Run once after a short delay to catch initial render
-                        setTimeout(report, 500);
-                        setTimeout(report, 1500);
-                        setTimeout(report, 3000);
+                        // Watch DOM mutations
+                        new MutationObserver(report).observe(document.body, { childList: true, subtree: true });
+                        // Poll every 300ms — catches tab switches, lazy-loading content
+                        setInterval(report, 300);
+                        // Also fire on window resize (responsive layout changes)
+                        window.addEventListener('resize', report);
+                        // Fire a few times on load to catch progressive widget render
+                        [200, 600, 1200, 2000, 3500].forEach(function(t){ setTimeout(report, t); });
                     })();
                     <\/script>
                 `;
@@ -597,13 +596,15 @@ const OneSportsMatch = (() => {
 
                 // Listen for height reports from inside the iframe
                 const heightListener = (event) => {
-                    if (event.data && event.data.type === 'os-widget-height') {
-                        const h = Math.ceil(event.data.height);
-                        if (h > 100) {
-                            iframe.style.height = h + 'px';
-                            wrapper.style.minHeight = h + 'px';
-                        }
-                    }
+                    if (!event.data || event.data.type !== 'os-widget-height') return;
+                    const h = Math.ceil(event.data.height);
+                    if (h < 100) return; // ignore noise / partial renders
+                    // Set BOTH iframe and wrapper to exact content height — no min-height floor
+                    iframe.style.height = h + 'px';
+                    wrapper.style.height = h + 'px';
+                    // Clear any residual min-height so the section shrinks when widget collapses
+                    wrapper.style.minHeight = '0';
+                    wrapper.style.removeProperty('min-height');
                 };
                 window.addEventListener('message', heightListener);
 
@@ -614,6 +615,11 @@ const OneSportsMatch = (() => {
                     const skeleton = wrapper.querySelector('.os-widget-skeleton');
                     if (skeleton) skeleton.style.display = 'none';
                     iframe.style.opacity = '1';
+                    // Give it a fallback height if postMessage hasn't fired yet
+                    if (parseInt(iframe.style.height) < 100) {
+                        iframe.style.height = '500px';
+                        wrapper.style.height = '500px';
+                    }
                     window.OneSports.log('365Scores Widget loaded via postMessage auto-resize.');
                 };
 
@@ -709,7 +715,7 @@ const OneSportsMatch = (() => {
                         .standings-table tr:hover td { background: rgba(255,255,255,0.03); }
                         .standings-table .team-name { text-align: left; font-weight: 600; display: flex; align-items: center; gap: 8px; }
                     </style>
-                    <div id="os-standings-widget" class="glass-card os-standings-container fade-in" style="min-height: auto; padding: 20px;">
+                    <div id="os-standings-widget" class="glass-card os-standings-container fade-in" style="padding: 20px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px; border-bottom: 1px solid var(--glass-border); padding-bottom: 8px;">
                             <h3 style="margin: 0; font-family: var(--font-heading); font-size: 1.2rem;"><i class="fas fa-list-ol" style="color: var(--secondary); margin-right: 8px;"></i> Standings</h3>
                         </div>
