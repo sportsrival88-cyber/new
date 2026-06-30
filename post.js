@@ -1180,19 +1180,18 @@ const OneSportsMatch = (() => {
 
             // CRITICAL FIX: If the user accidentally left an unclosed <a> tag in their Blogger
             // editor (or linked the entire post), the entire page becomes a clickable link.
-            // We forcefully neutralize the broken link and break the container out of it.
-            let parentLink = container.closest('a');
-            while (parentLink) {
-                // Remove href so it completely stops acting like a link (removes pointer & underline)
-                parentLink.removeAttribute('href');
-                parentLink.style.textDecoration = 'none';
-                parentLink.style.cursor = 'default';
-                
-                // Move container out of the link to be absolutely safe
-                parentLink.parentNode.insertBefore(container, parentLink.nextSibling);
-                
-                // Check if there are nested accidental links
-                parentLink = container.closest('a');
+            // We non-destructively neutralize the broken link without altering the DOM tree.
+            let el = container.parentElement;
+            while (el && el !== document.body) {
+                if (el.tagName.toLowerCase() === 'a') {
+                    // Remove href so it completely stops acting like a link
+                    el.removeAttribute('href');
+                    el.style.textDecoration = 'none';
+                    el.style.cursor = 'default';
+                    // Optional fallback: clear click actions
+                    el.onclick = (e) => e.preventDefault();
+                }
+                el = el.parentElement;
             }
             
             buildConfig(container);
