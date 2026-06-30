@@ -381,7 +381,7 @@ const OneSportsMatch = (() => {
                             -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
                         }
                     </style>
-                    <div class="match-card fade-in" style="position: relative; margin-bottom: 30px; cursor: default; border-color: var(--glass-border); padding: 30px; border-radius: 20px; background: rgba(20, 20, 25, 0.4); backdrop-filter: blur(10px); overflow: hidden;">
+                    <div class="match-card fade-in" style="position: relative; margin-bottom: 30px; cursor: default; border-color: var(--glass-border); padding: 15px 30px 30px 30px; border-radius: 20px; background: rgba(20, 20, 25, 0.4); backdrop-filter: blur(10px); overflow: hidden;">
                         <!-- Background Flag Fills -->
                         ${homeLogoUrl ? `<div class="card-bg-flag left" style="background-image: url('${homeLogoUrl}'); opacity: 0.15; filter: blur(24px) saturate(120%);"></div>` : ''}
                         ${awayLogoUrl ? `<div class="card-bg-flag right" style="background-image: url('${awayLogoUrl}'); opacity: 0.15; filter: blur(24px) saturate(120%);"></div>` : ''}
@@ -390,7 +390,7 @@ const OneSportsMatch = (() => {
                         <div style="position: relative; z-index: 2;">
                             
                             <!-- Top Row: Competition, Logo, & Round -->
-                            <div class="match-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                            <div class="match-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                                 ${compName ? `
                                 <div style="display:flex; align-items:center;">
                                     ${compLogo ? `<img src="${compLogo}" alt="Cup" style="width:20px; height:20px; margin-right:8px; border-radius:2px;">` : ''}
@@ -534,7 +534,7 @@ const OneSportsMatch = (() => {
                 iframe.className = 'os-widget-iframe fade-in';
                 iframe.title = "Live Match Center";
                 iframe.setAttribute('allowtransparency', 'true');
-                iframe.style.cssText = "width: 100%; height: 750px; border: none; overflow-y: auto; border-radius: 8px; display: block; opacity: 0; transition: opacity 0.5s ease;";
+                iframe.style.cssText = "width: 100%; min-height: 600px; height: 750px; border: none; overflow: hidden; border-radius: 8px; display: block; opacity: 0; transition: height 0.3s ease, opacity 0.5s ease;";
 
                 // Encapsulate the widget inside an iframe to prevent its global CSS from leaking and breaking the site's layout.
                 const html = `
@@ -546,7 +546,7 @@ const OneSportsMatch = (() => {
                         <link rel="preconnect" href="https://widgets.365scores.com">
                         <link rel="preload" href="https://widgets.365scores.com/main.js" as="script">
                         <style>
-                            body { margin: 0; padding: 0; background: transparent; overflow-y: auto; overflow-x: hidden; }
+                            body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
                             #powered-by { display: none !important; }
                         </style>
                     </head>
@@ -574,6 +574,32 @@ const OneSportsMatch = (() => {
                     if (skeleton) skeleton.style.display = 'none';
                     iframe.style.opacity = '1';
                     window.OneSports.log('365Scores Widget encapsulated successfully.');
+
+                    // Auto-resize logic based on internal React widget size
+                    try {
+                        const iframeDoc = iframe.contentDocument;
+                        const updateHeight = () => {
+                            const widgetDiv = iframeDoc.querySelector('[data-widget-id]');
+                            if (widgetDiv) {
+                                const newHeight = widgetDiv.offsetHeight;
+                                if (newHeight > 100) {
+                                    iframe.style.height = (newHeight + 20) + 'px';
+                                }
+                            }
+                        };
+                        
+                        const bodyObserver = new MutationObserver(updateHeight);
+                        bodyObserver.observe(iframeDoc.body, { childList: true, subtree: true, attributes: true });
+                        
+                        if (window.ResizeObserver) {
+                            const resizeObs = new ResizeObserver(updateHeight);
+                            resizeObs.observe(iframeDoc.body);
+                        }
+                        
+                        setInterval(updateHeight, 1000);
+                    } catch (e) {
+                        window.OneSports.log('Auto-resize observer failed', e);
+                    }
                 };
 
                 // Fallback timeout in case iframe fails silently
@@ -814,18 +840,20 @@ const OneSportsMatch = (() => {
                 // Create the sections
                 const html = `
                     <div id="os-related-posts" class="os-blogger-section fade-in">
-                        <div class="section-header">
-                            <h3>Related Posts</h3>
+                        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; margin-bottom: 20px;">
+                            <h3 style="margin: 0; font-family: var(--font-heading); font-size: 1.3rem; display: flex; align-items: center; text-transform: uppercase;">Related Posts</h3>
+                            <a href="/" style="font-size: 0.85rem; color: var(--secondary); font-weight: 600; text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px;">View All <i class="fas fa-arrow-right"></i></a>
                         </div>
-                        <div class="os-blogger-grid" id="os-related-grid">
+                        <div class="news-scroll-container" id="os-related-grid" style="padding-bottom: 15px;">
                             ${Modules.BloggerContent.renderSkeleton(6)}
                         </div>
                     </div>
-                    <div id="os-recent-posts" class="os-blogger-section fade-in">
-                        <div class="section-header">
-                            <h3>Recent Posts</h3>
+                    <div id="os-recent-posts" class="os-blogger-section fade-in" style="margin-top: 40px;">
+                        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; margin-bottom: 20px;">
+                            <h3 style="margin: 0; font-family: var(--font-heading); font-size: 1.3rem; display: flex; align-items: center; text-transform: uppercase;">Popular Sports</h3>
+                            <a href="/" style="font-size: 0.85rem; color: var(--secondary); font-weight: 600; text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px;">View All <i class="fas fa-arrow-right"></i></a>
                         </div>
-                        <div class="os-blogger-grid" id="os-recent-grid">
+                        <div class="news-scroll-container" id="os-recent-grid" style="padding-bottom: 15px;">
                             ${Modules.BloggerContent.renderSkeleton(6)}
                         </div>
                     </div>
@@ -897,7 +925,7 @@ const OneSportsMatch = (() => {
                         <div class="news-content">
                             <h4 class="news-title">${post.title}</h4>
                             <div class="news-meta">
-                                <span><i class="fas fa-calendar-alt"></i> ${post.published}</span>
+                                <span>${post.published}</span>
                             </div>
                         </div>
                     </a>
