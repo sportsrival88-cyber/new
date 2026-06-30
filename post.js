@@ -492,9 +492,9 @@ const OneSportsMatch = (() => {
                 const widgetWrapperHTML = `
                     <style>
                         /* Injected Widget Styles to bypass cache */
-                        .os-widget-container { width: 100%; margin-top: 25px; margin-bottom: 40px; position: relative; min-height: 800px; overflow: hidden; }
+                        .os-widget-container { width: 100%; margin-top: 25px; margin-bottom: 40px; position: relative; min-height: 400px; overflow: hidden; }
                         .os-standings-container { width: 100%; margin-top: 25px; margin-bottom: 40px; position: relative; min-height: 500px; overflow: hidden; }
-                        .os-widget-iframe { width: 100%; height: 850px; border: none; opacity: 0; transition: opacity 0.5s ease-in-out; z-index: 1; position: relative; display: block; }
+                        .os-widget-iframe { width: 100%; min-height: 400px; border: none; opacity: 0; transition: opacity 0.5s ease-in-out; z-index: 1; position: relative; display: block; }
                         .os-widget-iframe.loaded { opacity: 1; }
                         .os-widget-skeleton, .os-standings-skeleton { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; gap: 15px; padding: 20px; z-index: 2; background: rgba(0,0,0,0.2); }
                         .os-skeleton-row { width: 100%; height: 60px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; animation: os-shimmer 1.5s infinite linear; }
