@@ -589,22 +589,47 @@ const OneSportsMatch = (() => {
                     <script>
                     (function() {
                         var lastH = 0;
+                        var stableCount = 0;
+                        var intervalId = null;
+
                         function report() {
+                            // getBoundingClientRect().height is the ONLY safe measurement:
+                            // it returns the rendered visual height, never the scrollable
+                            // overflow. scrollHeight causes feedback loops because it includes
+                            // the element's own scrollable area which grows as we set iframe height.
                             var el = document.querySelector('[data-widget-id]');
-                            var h = el ? el.scrollHeight : document.body.scrollHeight;
-                            if (h > 50 && Math.abs(h - lastH) > 2) {
-                                lastH = h;
-                                window.parent.postMessage({ type: 'os-widget-height', height: h }, '*');
+                            if (!el) return;
+                            var h = el.getBoundingClientRect().height;
+                            if (h < 50) return;
+                            if (Math.abs(h - lastH) < 2) {
+                                stableCount++;
+                                // Stop polling after 8 stable reads (saves CPU)
+                                // MutationObserver will still catch tab switches / expansions
+                                if (stableCount >= 8 && intervalId) {
+                                    clearInterval(intervalId);
+                                    intervalId = null;
+                                }
+                                return;
                             }
+                            stableCount = 0;
+                            lastH = h;
+                            window.parent.postMessage({ type: 'os-widget-height', height: h }, '*');
                         }
-                        // Watch DOM mutations
-                        new MutationObserver(report).observe(document.body, { childList: true, subtree: true });
-                        // Poll every 300ms — catches tab switches, lazy-loading content
-                        setInterval(report, 300);
-                        // Also fire on window resize (responsive layout changes)
-                        window.addEventListener('resize', report);
-                        // Fire a few times on load to catch progressive widget render
-                        [200, 600, 1200, 2000, 3500].forEach(function(t){ setTimeout(report, t); });
+
+                        // Watch DOM mutations (tab switches, lazy content)
+                        new MutationObserver(function() {
+                            stableCount = 0; // reset stability on any DOM change
+                            report();
+                        }).observe(document.body, { childList: true, subtree: true });
+
+                        // Poll at 500ms until stable, then stop
+                        intervalId = setInterval(report, 500);
+
+                        // Fire on resize (e.g. mobile rotation)
+                        window.addEventListener('resize', function() { stableCount = 0; report(); });
+
+                        // Initial fires to catch progressive widget render
+                        [300, 800, 1500, 2500].forEach(function(t) { setTimeout(report, t); });
                     })();
                     <\/script>
                 `;
@@ -642,13 +667,11 @@ const OneSportsMatch = (() => {
                 const heightListener = (event) => {
                     if (!event.data || event.data.type !== 'os-widget-height') return;
                     const h = Math.ceil(event.data.height);
-                    if (h < 100) return; // ignore noise / partial renders
-                    // Set BOTH iframe and wrapper to exact content height — no min-height floor
+                    if (h < 100) return;
+                    // Only set the iframe height — let the wrapper height:auto in CSS
+                    // flow naturally. Setting wrapper.style.height caused a second source
+                    // of truth that conflicted with the CSS and caused infinite growth.
                     iframe.style.height = h + 'px';
-                    wrapper.style.height = h + 'px';
-                    // Clear any residual min-height so the section shrinks when widget collapses
-                    wrapper.style.minHeight = '0';
-                    wrapper.style.removeProperty('min-height');
                 };
                 window.addEventListener('message', heightListener);
 
@@ -1280,21 +1303,34 @@ const OneSportsMatch = (() => {
          * Orchestrates the initialization of all downstream rendering modules.
          */
         const afterLoad = async () => {
-            // Initialize all UI rendering modules sequentially
-            for (const module of renderQueue) {
+            // Batch 1: Instant DOM modules — run sequentially since they are synchronous
+            // and depend on each other's DOM order (poster → info → buttons)
+            const domModules = [Modules.Poster, Modules.MatchInfo, Modules.Buttons];
+            for (const module of domModules) {
                 if (module && typeof module.init === 'function') {
-                    try {
-                        await module.init();
-                    } catch (error) {
-                        window.OneSports.log('Module initialization error', error, true);
-                    }
+                    try { await module.init(); } catch (e) { window.OneSports.log('Module error', e, true); }
                 }
             }
-            
-            // Initialize independent background modules
-            await Modules.TitleManager.init();
-            await Modules.SEO.init();
-            await Modules.Ads.init();
+
+            // Batch 2: All async/network modules fire in PARALLEL — no waiting for each other
+            // This is the key performance improvement: widget, standings, posts all load at the same time
+            const asyncModules = [
+                Modules.Widgets,
+                Modules.WatchButton,
+                Modules.Standings,
+                Modules.BloggerContent,
+                Modules.TitleManager,
+                Modules.SEO,
+                Modules.Ads
+            ];
+            await Promise.all(
+                asyncModules.map(module => {
+                    if (module && typeof module.init === 'function') {
+                        return module.init().catch(e => window.OneSports.log('Module error', e, true));
+                    }
+                    return Promise.resolve();
+                })
+            );
         };
 
         /**
