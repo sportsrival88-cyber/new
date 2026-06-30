@@ -419,3 +419,16 @@ body.light-mode .watch-btn.os-disabled {
 body.light-mode .os-skeleton-card { border-color: rgba(0, 0, 0, 0.05); }
 body.light-mode .os-skeleton-img { background: rgba(0, 0, 0, 0.04); }
 
+
+@media (max-width: 768px) {
+    .match-card { padding: 15px 15px 20px 15px !important; }
+    .match-header { flex-direction: column !important; align-items: center !important; gap: 15px !important; text-align: center; }
+    .match-teams-score { margin-bottom: 25px !important; }
+    .match-teams-score .team { width: 45% !important; }
+    .match-teams-score .team-name { font-size: 1.1rem !important; word-break: break-word; }
+    .match-teams-score .team img { width: 60px !important; height: 60px !important; margin-bottom: 10px !important; }
+    .score-area { width: 10% !important; }
+    .score-area div { font-size: 1.8rem !important; }
+    .os-mi-details { flex-direction: column; gap: 10px !important; }
+    .os-mi-detail-item { font-size: 0.85rem !important; width: 100%; justify-content: center; }
+}

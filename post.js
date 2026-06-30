@@ -579,22 +579,27 @@ const OneSportsMatch = (() => {
                     try {
                         const iframeDoc = iframe.contentDocument;
                         const updateHeight = () => {
+                            // 365Scores generates an inner iframe and dynamically sets its height.
+                            // We can perfectly mirror this height to our wrapper to prevent infinite loops.
+                            const innerIframe = iframeDoc.querySelector('iframe');
+                            if (innerIframe && innerIframe.style.height) {
+                                iframe.style.height = innerIframe.style.height;
+                                return;
+                            }
+                            
+                            // Fallback for native div injection
                             const widgetDiv = iframeDoc.querySelector('[data-widget-id]');
                             if (widgetDiv) {
-                                const newHeight = widgetDiv.offsetHeight;
-                                if (newHeight > 100) {
-                                    iframe.style.height = (newHeight + 20) + 'px';
+                                // Prevent infinite loops by not artificially adding to the height
+                                const contentHeight = widgetDiv.scrollHeight;
+                                if (contentHeight > 100) {
+                                    iframe.style.height = contentHeight + 'px';
                                 }
                             }
                         };
                         
                         const bodyObserver = new MutationObserver(updateHeight);
                         bodyObserver.observe(iframeDoc.body, { childList: true, subtree: true, attributes: true });
-                        
-                        if (window.ResizeObserver) {
-                            const resizeObs = new ResizeObserver(updateHeight);
-                            resizeObs.observe(iframeDoc.body);
-                        }
                         
                         setInterval(updateHeight, 1000);
                     } catch (e) {
@@ -842,7 +847,7 @@ const OneSportsMatch = (() => {
                     <div id="os-related-posts" class="os-blogger-section fade-in">
                         <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; margin-bottom: 20px;">
                             <h3 style="margin: 0; font-family: var(--font-heading); font-size: 1.3rem; display: flex; align-items: center; text-transform: uppercase;">Related Posts</h3>
-                            <a href="/" style="font-size: 0.85rem; color: var(--secondary); font-weight: 600; text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px;">View All <i class="fas fa-arrow-right"></i></a>
+                            <a href="/" style="font-size: 0.85rem; color: #ffffff; font-weight: 600; text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px;">View All <i class="fas fa-arrow-right"></i></a>
                         </div>
                         <div class="news-scroll-container" id="os-related-grid" style="padding-bottom: 15px;">
                             ${Modules.BloggerContent.renderSkeleton(6)}
@@ -851,7 +856,7 @@ const OneSportsMatch = (() => {
                     <div id="os-recent-posts" class="os-blogger-section fade-in" style="margin-top: 40px;">
                         <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; margin-bottom: 20px;">
                             <h3 style="margin: 0; font-family: var(--font-heading); font-size: 1.3rem; display: flex; align-items: center; text-transform: uppercase;">Popular Sports</h3>
-                            <a href="/" style="font-size: 0.85rem; color: var(--secondary); font-weight: 600; text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px;">View All <i class="fas fa-arrow-right"></i></a>
+                            <a href="/" style="font-size: 0.85rem; color: #ffffff; font-weight: 600; text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px;">View All <i class="fas fa-arrow-right"></i></a>
                         </div>
                         <div class="news-scroll-container" id="os-recent-grid" style="padding-bottom: 15px;">
                             ${Modules.BloggerContent.renderSkeleton(6)}
