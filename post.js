@@ -318,6 +318,40 @@ const OneSportsMatch = (() => {
     // ==========================================
     const Modules = {
         Poster: {
+            /**
+             * Extracts the Blogger post thumbnail — the first uploaded image in the post.
+             * Priority order:
+             *   1. og:image meta tag (Blogger sets this to the post's first image at full res)
+             *   2. First <img> inside the Blogger post body (.post-body or article)
+             *   3. data-poster attribute on the widget container
+             *   4. Generic placeholder
+             */
+            getBloggerThumbnail: () => {
+                // 1. og:image — Blogger automatically sets this to the post's first image
+                const ogImage = document.querySelector('meta[property="og:image"]');
+                if (ogImage && ogImage.content) {
+                    // Upgrade to the highest available resolution from Blogger's image CDN
+                    return ogImage.content.replace(/\/s\d+(-[a-z])?\//, '/s2400/');
+                }
+
+                // 2. First real image inside the post body (skip logos/icons by checking size)
+                const postBody = document.querySelector('.post-body, .entry-content, article .post-body-container');
+                if (postBody) {
+                    const imgs = postBody.querySelectorAll('img');
+                    for (const img of imgs) {
+                        const src = img.src || img.getAttribute('data-src') || '';
+                        // Skip tiny icons and tracker pixels
+                        if (src && !src.includes('favicon') && !src.includes('pixel') && 
+                            (img.naturalWidth > 100 || img.width > 100 || img.getAttribute('width') > 100)) {
+                            return src.replace(/\/s\d+(-[a-z])?\//, '/s2400/');
+                        }
+                    }
+                }
+
+                // 3 & 4. Fall back to data-poster or placeholder
+                return null;
+            },
+
             init: async () => {
                 const container = document.getElementById('onesports-match');
                 if (!container) return;
@@ -327,15 +361,18 @@ const OneSportsMatch = (() => {
                     ? `${match.homeTeam.name} vs ${match.awayTeam.name} Poster` 
                     : 'Match Poster';
 
-                const posterUrl = MATCH_CONFIG.poster || 'https://placehold.co/1200x675/1a1a24/ffffff?text=OneSports+Live';
+                // Use Blogger thumbnail first, then data-poster fallback, then placeholder
+                const posterUrl = Modules.Poster.getBloggerThumbnail()
+                    || MATCH_CONFIG.poster 
+                    || 'https://placehold.co/2100x900/1a1a24/ffffff?text=OneSports+Live';
 
                 const html = `
                     <div class="os-poster-container fade-in">
-                        <img src="${posterUrl}" alt="${altText}" class="os-poster-image" loading="lazy">
+                        <img src="${posterUrl}" alt="${altText}" class="os-poster-image" loading="lazy" fetchpriority="high">
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', html);
-                window.OneSports.log('Poster Module rendered.');
+                window.OneSports.log('Poster Module rendered. Source: ' + posterUrl);
             }
         },
 
