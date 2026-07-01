@@ -19,8 +19,61 @@
     }
 }
 
-/* Global Link Hover Override for Post Pages */
-a:hover {
+/* ==========================================
+   LINK UNDERLINE SUPPRESSION
+   Blogger's browser default and theme CSS apply
+   text-decoration:underline on <a> hover.
+   Override with maximum specificity.
+   ========================================== */
+
+/* Nuclear reset — catches browser default + any theme rule */
+a,
+a:link,
+a:visited,
+a:hover,
+a:active,
+a:focus {
+    text-decoration: none !important;
+}
+
+/* Blogger post title anchor */
+.post-title a,
+.post-title a:hover,
+a.title-link,
+a.title-link:hover,
+.post-title-link,
+.post-title-link:hover,
+h3.post-title a,
+h3.post-title a:hover {
+    text-decoration: none !important;
+    cursor: default;
+}
+
+/* Blogger post body — suppress hover underline on all content links */
+.post-body a:hover,
+.post-body a:focus,
+.post-entry a:hover,
+.post-entry a:focus,
+.entry-content a:hover,
+.entry-content a:focus,
+#onesports-match a:hover,
+#onesports-match a:focus {
+    text-decoration: none !important;
+}
+
+/* News/related post cards — these ARE links, keep pointer but no underline */
+.news-card,
+.news-card:hover,
+.news-card:focus {
+    text-decoration: none !important;
+    color: inherit !important;
+}
+
+/* Navbar — suppress default underline on nav links */
+.nav-links a,
+.nav-links a:hover,
+.Header a,
+.Header a:hover {
     text-decoration: none !important;
 }
 

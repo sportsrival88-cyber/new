@@ -1265,6 +1265,26 @@ const OneSportsMatch = (() => {
             AppState.loading = false;
             AppState.ready = true;
             EventBus.emit('app:ready', AppState);
+
+            // Inject a late-stage style block to override any Blogger theme
+            // text-decoration:underline that fires after post.css loads.
+            // This runs LAST so it wins the cascade unconditionally.
+            const noUnderlineStyle = document.createElement('style');
+            noUnderlineStyle.id = 'os-no-underline';
+            noUnderlineStyle.textContent = `
+                a, a:link, a:visited, a:hover, a:active, a:focus,
+                a.title-link, a.title-link:hover,
+                .post-title a, .post-title a:hover,
+                .post-title-link, .post-title-link:hover,
+                .post-body a:hover, .post-body a:focus,
+                #onesports-match a:hover, #onesports-match a:focus,
+                .news-card, .news-card:hover,
+                .nav-links a:hover, .Header a:hover {
+                    text-decoration: none !important;
+                }
+            `;
+            document.head.appendChild(noUnderlineStyle);
+
             window.OneSports.log('Application Bootstrapper sequence complete.');
         };
 
