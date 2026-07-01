@@ -535,12 +535,9 @@ const OneSportsMatch = (() => {
                 // Create the widget wrapper with injected fallback styles
                 const widgetWrapperHTML = `
                     <style>
-                        /* Injected Widget Styles */
-                        .os-widget-container { width: 100%; margin-top: 25px; margin-bottom: 40px; position: relative; height: auto; overflow: visible; transition: height 0.35s ease; }
+                        .os-widget-container { width: 100%; margin-top: 25px; margin-bottom: 40px; position: relative; height: auto; overflow: visible; }
                         .os-standings-container { width: 100%; margin-top: 25px; margin-bottom: 40px; position: relative; height: auto; overflow: visible; }
-                        .os-widget-iframe { width: 100%; height: 0; border: none; opacity: 0; transition: height 0.35s ease, opacity 0.5s ease; display: block; }
-                        .os-widget-iframe.loaded { opacity: 1; }
-                        .os-widget-skeleton { position: absolute; top: 0; left: 0; width: 100%; height: 220px; display: flex; flex-direction: column; gap: 15px; padding: 20px; z-index: 2; background: rgba(0,0,0,0.2); border-radius: 12px; }
+                        .os-widget-skeleton { position: absolute; top: 0; left: 0; width: 100%; height: 220px; display: flex; flex-direction: column; gap: 15px; padding: 20px; z-index: 2; background: rgba(0,0,0,0.2); border-radius: 12px; pointer-events: none; }
                         .os-skeleton-row { width: 100%; height: 60px; background: rgba(255,255,255,0.03); border-radius: 8px; animation: os-shimmer 1.5s infinite linear; }
                         .os-skeleton-row:first-child { height: 150px; }
                         body.light-mode .os-skeleton-row { background: rgba(0,0,0,0.04); }
@@ -832,20 +829,20 @@ const OneSportsMatch = (() => {
                 // Create the sections
                 const html = `
                     <div id="os-related-posts" class="os-blogger-section fade-in">
-                        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; margin-bottom: 20px;">
-                            <h3 style="margin: 0; font-family: var(--font-heading); font-size: 1.3rem; display: flex; align-items: center; text-transform: uppercase;">Related Posts</h3>
-                            <a href="/" style="font-size: 0.85rem; color: #ffffff; font-weight: 600; text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px;">View All <i class="fas fa-arrow-right"></i></a>
+                        <div class="os-posts-section-header">
+                            <span class="os-posts-section-bar"></span>
+                            <h3 class="os-posts-section-title">Related Posts</h3>
                         </div>
-                        <div class="news-scroll-container" id="os-related-grid" style="padding-bottom: 15px;">
+                        <div class="os-posts-grid" id="os-related-grid">
                             ${Modules.BloggerContent.renderSkeleton(6)}
                         </div>
                     </div>
-                    <div id="os-recent-posts" class="os-blogger-section fade-in" style="margin-top: 40px;">
-                        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; margin-bottom: 20px;">
-                            <h3 style="margin: 0; font-family: var(--font-heading); font-size: 1.3rem; display: flex; align-items: center; text-transform: uppercase;">Popular Sports</h3>
-                            <a href="/" style="font-size: 0.85rem; color: #ffffff; font-weight: 600; text-decoration: none; text-transform: uppercase; letter-spacing: 0.5px;">View All <i class="fas fa-arrow-right"></i></a>
+                    <div id="os-recent-posts" class="os-blogger-section fade-in" style="margin-top: 48px;">
+                        <div class="os-posts-section-header">
+                            <span class="os-posts-section-bar"></span>
+                            <h3 class="os-posts-section-title">Popular Sports</h3>
                         </div>
-                        <div class="news-scroll-container" id="os-recent-grid" style="padding-bottom: 15px;">
+                        <div class="os-posts-grid" id="os-recent-grid">
                             ${Modules.BloggerContent.renderSkeleton(6)}
                         </div>
                     </div>
@@ -912,11 +909,14 @@ const OneSportsMatch = (() => {
                 const postsToRender = posts.slice(0, limit);
                 
                 const html = postsToRender.map(post => `
-                    <a href="${post.link}" class="news-card fade-in" aria-label="Read ${post.title}">
-                        <img src="${post.thumbnail}" alt="${post.title}" class="news-image" loading="lazy">
-                        <div class="news-content">
-                            <h4 class="news-title">${post.title}</h4>
-                            <div class="news-meta">
+                    <a href="${post.link}" class="os-post-card fade-in" aria-label="Read ${post.title}">
+                        <div class="os-post-card-img-wrap">
+                            <img src="${post.thumbnail}" alt="${post.title}" class="os-post-card-img" loading="lazy">
+                        </div>
+                        <div class="os-post-card-body">
+                            <h4 class="os-post-card-title">${post.title}</h4>
+                            <div class="os-post-card-meta">
+                                <i class="fas fa-calendar-alt"></i>
                                 <span>${post.published}</span>
                             </div>
                         </div>
@@ -928,14 +928,14 @@ const OneSportsMatch = (() => {
 
             renderSkeleton: (count) => {
                 let html = '';
-                for(let i=0; i<count; i++) {
+                for (let i = 0; i < count; i++) {
                     html += `
-                        <div class="news-card os-skeleton-card">
-                            <div class="news-image os-skeleton-img"></div>
-                            <div class="news-content" style="gap: 10px;">
-                                <div class="os-skeleton-row" style="height: 15px; width: 90%; animation-duration: 1s;"></div>
-                                <div class="os-skeleton-row" style="height: 15px; width: 60%; animation-duration: 1s;"></div>
-                                <div class="os-skeleton-row" style="height: 10px; width: 40%; margin-top: auto; animation-duration: 1s;"></div>
+                        <div class="os-post-card os-skeleton-card">
+                            <div class="os-post-card-img-wrap os-skeleton-img"></div>
+                            <div class="os-post-card-body" style="gap: 10px;">
+                                <div class="os-skeleton-row" style="height: 14px; width: 95%; animation-duration: 1.1s;"></div>
+                                <div class="os-skeleton-row" style="height: 14px; width: 70%; animation-duration: 1.1s;"></div>
+                                <div class="os-skeleton-row" style="height: 10px; width: 40%; margin-top: auto; animation-duration: 1.1s;"></div>
                             </div>
                         </div>
                     `;
@@ -1279,6 +1279,7 @@ const OneSportsMatch = (() => {
                 .post-body a:hover, .post-body a:focus,
                 #onesports-match a:hover, #onesports-match a:focus,
                 .news-card, .news-card:hover,
+                .os-post-card, .os-post-card:hover,
                 .nav-links a:hover, .Header a:hover {
                     text-decoration: none !important;
                 }
