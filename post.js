@@ -1179,19 +1179,32 @@ const OneSportsMatch = (() => {
             }
 
             // CRITICAL FIX: If the user accidentally left an unclosed <a> tag in their Blogger
-            // editor (or linked the entire post), the entire page becomes a clickable link.
-            // We non-destructively neutralize the broken link without altering the DOM tree.
+            // editor, HTML5 parsers will "reconstruct" the unclosed tag around every subsequent
+            // block element. We non-destructively neutralize the broken link wrapping the container,
+            // then hunt down any clones it created across the entire page (like around the title).
             let el = container.parentElement;
+            let brokenHref = null;
             while (el && el !== document.body) {
                 if (el.tagName.toLowerCase() === 'a') {
-                    // Remove href so it completely stops acting like a link
+                    brokenHref = el.getAttribute('href');
                     el.removeAttribute('href');
                     el.style.textDecoration = 'none';
                     el.style.cursor = 'default';
-                    // Optional fallback: clear click actions
                     el.onclick = (e) => e.preventDefault();
                 }
                 el = el.parentElement;
+            }
+
+            if (brokenHref) {
+                // Neutralize all browser-generated clones of the unclosed link
+                const clones = document.querySelectorAll(`a[href="${brokenHref}"]`);
+                clones.forEach(clone => {
+                    clone.removeAttribute('href');
+                    clone.style.textDecoration = 'none';
+                    clone.style.cursor = 'default';
+                    clone.onclick = (e) => e.preventDefault();
+                });
+                window.OneSports.log('Sanitizer: Neutralized ghost links with href ' + brokenHref);
             }
             
             buildConfig(container);
