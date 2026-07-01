@@ -724,13 +724,17 @@ const OneSportsMatch = (() => {
                     if (!response.ok) throw new Error('Network response was not ok');
                     const data = await response.json();
                     
-                    if (data && data.standings && data.standings.length > 0) {
-                        Modules.Standings.allRows = data.standings[0].rows || [];
+                    if (data && data.standings && data.standings.length > 0 &&
+                        data.standings[0].rows && data.standings[0].rows.length > 0) {
+                        Modules.Standings.allRows = data.standings[0].rows;
                         Modules.Standings.destinations = data.standings[0].destinations || [];
                         Modules.Standings.setupGroups();
                         Modules.Standings.renderTable();
                     } else {
-                        throw new Error('No standings data');
+                        // No standings available for this match (e.g. knockout stage) — hide silently
+                        const widget = document.getElementById('os-standings-widget');
+                        if (widget) widget.style.display = 'none';
+                        window.OneSports.log('Standings not available for this match (knockout/no group stage).');
                     }
                 } catch (error) {
                     window.OneSports.log('Failed to load standings API', error, true);
@@ -1272,17 +1276,10 @@ const OneSportsMatch = (() => {
             const noUnderlineStyle = document.createElement('style');
             noUnderlineStyle.id = 'os-no-underline';
             noUnderlineStyle.textContent = `
-                a, a:link, a:visited, a:hover, a:active, a:focus,
-                a.title-link, a.title-link:hover,
-                .post-title a, .post-title a:hover,
-                .post-title-link, .post-title-link:hover,
-                .post-body a:hover, .post-body a:focus,
-                #onesports-match a:hover, #onesports-match a:focus,
-                .news-card, .news-card:hover,
-                .os-post-card, .os-post-card:hover,
-                .nav-links a:hover, .Header a:hover {
-                    text-decoration: none !important;
-                }
+                /* Nuclear underline suppression — overrides browser default + Blogger theme */
+                *, *::before, *::after { text-decoration: none !important; }
+                /* Restore underline only for elements that semantically need it */
+                ins, del, u, mark { text-decoration: revert; }
             `;
             document.head.appendChild(noUnderlineStyle);
 
