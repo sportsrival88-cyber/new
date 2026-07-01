@@ -1178,34 +1178,25 @@ const OneSportsMatch = (() => {
                 throw new Error('CRITICAL ERROR: "#onesports-match" element not found in DOM.');
             }
 
-            // CRITICAL FIX: If the user accidentally left an unclosed <a> tag in their Blogger
-            // editor, HTML5 parsers will "reconstruct" the unclosed tag around every subsequent
-            // block element. We non-destructively neutralize the broken link wrapping the container,
-            // then hunt down any clones it created across the entire page (like around the title).
-            let el = container.parentElement;
-            let brokenHref = null;
-            while (el && el !== document.body) {
-                if (el.tagName.toLowerCase() === 'a') {
-                    brokenHref = el.getAttribute('href');
-                    el.removeAttribute('href');
-                    el.style.textDecoration = 'none';
-                    el.style.cursor = 'default';
-                    el.onclick = (e) => e.preventDefault();
-                }
-                el = el.parentElement;
-            }
+            // CRITICAL FIX: Aggressive Global HTML Sanitizer
+            // If the user accidentally left an unclosed <a> tag from a Blogger image upload,
+            // or if the browser reconstructed multiple clones of it, we hunt them ALL down.
+            const allLinks = document.querySelectorAll('a');
+            allLinks.forEach(link => {
+                // 1. Check if the link points to a Blogger uploaded image (the #1 cause of this bug)
+                const isBloggerImageLink = link.href && link.href.includes('googleusercontent.com/img/');
+                
+                // 2. Check if the link accidentally wraps our main container
+                const wrapsContainer = link.contains(container);
 
-            if (brokenHref) {
-                // Neutralize all browser-generated clones of the unclosed link
-                const clones = document.querySelectorAll(`a[href="${brokenHref}"]`);
-                clones.forEach(clone => {
-                    clone.removeAttribute('href');
-                    clone.style.textDecoration = 'none';
-                    clone.style.cursor = 'default';
-                    clone.onclick = (e) => e.preventDefault();
-                });
-                window.OneSports.log('Sanitizer: Neutralized ghost links with href ' + brokenHref);
-            }
+                if (isBloggerImageLink || wrapsContainer) {
+                    link.removeAttribute('href');
+                    link.style.textDecoration = 'none';
+                    link.style.cursor = 'default';
+                    link.onclick = (e) => e.preventDefault();
+                }
+            });
+            window.OneSports.log('Sanitizer: Scanned and neutralized rogue links.');
             
             buildConfig(container);
             
